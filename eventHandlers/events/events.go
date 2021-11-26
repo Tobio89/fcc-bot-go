@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/BruceJi7/fcc-bot-go/config"
 	"github.com/BruceJi7/fcc-bot-go/constant"
 	disc "github.com/BruceJi7/fcc-bot-go/discordHelpers"
 	"github.com/BruceJi7/fcc-bot-go/eventHandlers/events/onReaction"
@@ -15,17 +16,11 @@ import (
 var MSG_TO_WATCH string = ""
 
 func OnReady(s *discordgo.Session, _ *discordgo.Ready) {
-	disc.SendLog(s, "init")
+	logMessage := fmt.Sprintf(disc.Log.Init)
+	disc.SendLog(s, logMessage)
 }
 
 func OnNewMember(s *discordgo.Session, memberJoinEvent *discordgo.GuildMemberAdd) {
-
-	var newUserName string
-	if memberJoinEvent.Member.Nick != "" {
-		newUserName = memberJoinEvent.Member.Nick
-	} else {
-		newUserName = memberJoinEvent.User.Username
-	}
 
 	r := rand.New(rand.NewSource(time.Now().Unix()))
 	greeting := constant.RandomGreeting(r)
@@ -33,7 +28,7 @@ func OnNewMember(s *discordgo.Session, memberJoinEvent *discordgo.GuildMemberAdd
 	secondSuggestion := constant.RandomSuggestion(r)
 	closing := constant.RandomClosing(r)
 
-	botWelcomeScript := fmt.Sprintf("%s, %s! %s introduce yourself, tell us your coding story.\n %s check out the react-for-roles channel and let us know where you're based!\n %s", greeting, newUserName, suggestion, secondSuggestion, closing)
+	botWelcomeScript := fmt.Sprintf("%s, %s! %s introduce yourself, tell us your coding story.\n %s check out the react-for-roles channel and let us know where you're based!\n %s", greeting, memberJoinEvent.Mention(), suggestion, secondSuggestion, closing)
 
 	welcomeChannel, err := disc.GetChannelByName(s, "off-topic")
 	if err != nil {
@@ -42,6 +37,9 @@ func OnNewMember(s *discordgo.Session, memberJoinEvent *discordgo.GuildMemberAdd
 	} else {
 		s.ChannelMessageSend(welcomeChannel.ID, botWelcomeScript)
 	}
+	s.GuildMemberRoleAdd(config.GuildID, memberJoinEvent.Member.User.ID, "739417002921427084")
+	logMessage := fmt.Sprintf(disc.Log.NewMember + memberJoinEvent.User.Username)
+	disc.SendLog(s, logMessage)
 }
 
 func OnReactionAdded(s *discordgo.Session, m *discordgo.MessageReactionAdd) {

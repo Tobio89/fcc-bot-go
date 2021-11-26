@@ -6,6 +6,7 @@ import (
 	"github.com/BruceJi7/fcc-bot-go/config"
 	"github.com/BruceJi7/fcc-bot-go/constant"
 	disc "github.com/BruceJi7/fcc-bot-go/discordHelpers"
+
 	"github.com/BruceJi7/fcc-bot-go/eventHandlers/events/onReaction/learningResources"
 	"github.com/BruceJi7/fcc-bot-go/eventHandlers/events/onReaction/reactForRole"
 

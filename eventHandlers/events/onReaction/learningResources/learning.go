@@ -5,6 +5,7 @@ import (
 
 	"github.com/BruceJi7/fcc-bot-go/config"
 	"github.com/BruceJi7/fcc-bot-go/constant"
+	disc "github.com/BruceJi7/fcc-bot-go/discordHelpers"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -26,10 +27,12 @@ func LearningResourcePost(s *discordgo.Session, m *discordgo.MessageReactionAdd,
 	}
 
 	if bulbCount >= config.LearningVoteRequirement { // If x bulbs (or more) (probably 5 lol)
-		messageContents := message.Content
+		messageContents := fmt.Sprintf("Thanks, %s, who posted this resource: \n"+message.Content, message.Author.Mention())
+
 		s.ChannelMessageSend(learningResourcesChannel.ID, messageContents)
 		s.MessageReactionAdd(learningDiscussionChannel.ID, message.ID, constant.BotProcessedEmoji)
-
+		logMessage := fmt.Sprintf(disc.Log.LearningPost+"%s's post was added to Learning Resources", message.Author)
+		disc.SendLog(s, logMessage)
 	}
 }
 
