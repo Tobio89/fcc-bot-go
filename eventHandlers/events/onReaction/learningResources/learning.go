@@ -27,8 +27,7 @@ func LearningResourcePost(s *discordgo.Session, m *discordgo.MessageReactionAdd,
 	}
 
 	if bulbCount >= config.LearningVoteRequirement { // If x bulbs (or more) (probably 5 lol)
-		messageContents := fmt.Sprintf("Thanks, %s, who posted this resource: \n"+message.Content, message.Author.Mention())
-
+		messageContents := fmt.Sprintf("%s\nThanks, %s, who posted this resource: \n"+message.Content, makeMessageLink(message.Reference()), message.Author.Mention())
 		s.ChannelMessageSend(learningResourcesChannel.ID, messageContents)
 		s.MessageReactionAdd(learningDiscussionChannel.ID, message.ID, constant.BotProcessedEmoji)
 		logMessage := fmt.Sprintf(disc.Log.LearningPost+"%s's post was added to Learning Resources", message.Author)
@@ -50,4 +49,8 @@ func parseLearningReactions(reactions []*discordgo.MessageReactions, emoji strin
 		}
 	}
 	return hasBotResponded, bulbCount
+}
+
+func makeMessageLink(reference *discordgo.MessageReference) string {
+	return fmt.Sprintf("https://discord.com/channels/%s/%s/%s", config.GuildID, reference.ChannelID, reference.MessageID)
 }
