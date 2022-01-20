@@ -16,3 +16,6 @@ var RFRRoles = []string{
 
 const BotProcessedEmoji = "✅"
 const LearningEmoji = "💡"
+
+const GatherEmoji = "🍇"
+const GatherRoleName = "Gather-Attendees"

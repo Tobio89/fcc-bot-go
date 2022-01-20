@@ -126,3 +126,53 @@ func RFRRemove(s *discordgo.Session, member *discordgo.Member, emojiUsed string)
 
 	}
 }
+
+func OnlineChatRoleAdd(s *discordgo.Session, member *discordgo.Member) {
+
+	OnlineChatSubscriptionRole, _ := disc.GetRoleByName(s, constant.GatherRoleName)
+
+	for _, userExistingRoleID := range member.Roles {
+		if userExistingRoleID == OnlineChatSubscriptionRole.ID {
+			// They already have the role, EJECT
+			return
+		}
+	}
+
+	err := s.GuildMemberRoleAdd(config.GuildID, member.User.ID, OnlineChatSubscriptionRole.ID)
+	if err != nil {
+		fmt.Println("Whilst parsing reaction added:")
+		fmt.Println("Error removing role")
+		fmt.Println(err)
+	}
+	logMessage := fmt.Sprintf("%s User %s subscribes to Gather updates", disc.Log.RoleAdded, member.User.Username)
+	disc.SendLog(s, logMessage)
+
+}
+
+func OnlineChatRoleRemove(s *discordgo.Session, member *discordgo.Member) {
+
+	OnlineChatSubscriptionRole, _ := disc.GetRoleByName(s, constant.GatherRoleName)
+
+	shouldRemove := false
+	for _, userExistingRoleID := range member.Roles {
+		if userExistingRoleID == OnlineChatSubscriptionRole.ID {
+			shouldRemove = true
+			break
+		}
+	}
+	if !shouldRemove {
+
+		// Leave the function, there is no role to remove
+		return
+	}
+
+	err := s.GuildMemberRoleRemove(config.GuildID, member.User.ID, OnlineChatSubscriptionRole.ID)
+	if err != nil {
+		fmt.Println("Whilst parsing reaction removed:")
+		fmt.Println("Error removing role")
+		fmt.Println(err)
+		return
+	}
+	logMessage := fmt.Sprintf("%s User %s removes subscription to Gather updates", disc.Log.RoleAdded, member.User.Username)
+	disc.SendLog(s, logMessage)
+}

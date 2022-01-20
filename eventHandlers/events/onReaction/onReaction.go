@@ -16,6 +16,10 @@ import (
 func ParseReactionAdded(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
 	emojiUsed := m.Emoji.MessageFormat()
 
+	if config.TestMode {
+		fmt.Println("Emoji used: ", emojiUsed)
+	}
+
 	member, err := disc.FetchMember(s, m.UserID)
 	if err != nil {
 		fmt.Println("Whilst parsing reaction added:")
@@ -26,7 +30,11 @@ func ParseReactionAdded(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
 
 	// If the reaction was on the RFR Post:
 	if m.MessageID == config.RFRPostID {
-		reactForRole.RFRAdd(s, member, emojiUsed)
+		if emojiUsed == constant.GatherEmoji {
+			reactForRole.OnlineChatRoleAdd(s, member)
+		} else {
+			reactForRole.RFRAdd(s, member, emojiUsed)
+		}
 	} else {
 		//If not, might be learning-related
 		learningDiscussionChannel, _ := disc.GetChannelByName(s, "learning-discussion")
@@ -55,6 +63,10 @@ func ParseReactionRemoved(s *discordgo.Session, m *discordgo.MessageReactionRemo
 
 	// If the reaction was on the RFR Post:
 	if m.MessageID == config.RFRPostID {
-		reactForRole.RFRRemove(s, member, emojiUsed)
+		if emojiUsed == constant.GatherEmoji {
+			reactForRole.OnlineChatRoleRemove(s, member)
+		} else {
+			reactForRole.RFRRemove(s, member, emojiUsed)
+		}
 	}
 }
