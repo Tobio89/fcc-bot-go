@@ -19,3 +19,7 @@ const LearningEmoji = "💡"
 
 const GatherEmoji = "🍇"
 const GatherRoleName = "Gather-Attendees"
+
+var CollabRoleMap = map[string]string{
+	"project-shelf": "Project Shelf Collaborator",
+}

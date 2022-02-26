@@ -19,7 +19,7 @@ func AddEventHandlers(dg *discordgo.Session) {
 	dg.AddHandler(events.OnReactionRemoved)
 
 	dg.AddHandler(commandHandlers.AdminCommands)
-
+	dg.AddHandler(commandHandlers.CollabCommands)
 }
 
 func CreateCommands(dg *discordgo.Session) {
@@ -38,5 +38,11 @@ func CreateCommands(dg *discordgo.Session) {
 	} else {
 		fmt.Println("Forcelog command added")
 	}
-
+	_, err = dg.ApplicationCommandCreate(config.AppID, config.GuildID, commands.CollaborationInviteCommand)
+	if err != nil {
+		fmt.Println("Error adding collab invitation command:")
+		fmt.Println(err)
+	} else {
+		fmt.Println("Collab command added")
+	}
 }

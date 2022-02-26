@@ -132,3 +132,18 @@ func memberHasPermission(s *discordgo.Session, guildID string, userID string, pe
 
 	return false, nil
 }
+
+func UserHasRole(s *discordgo.Session, member *discordgo.Member, roleToFind string) (bool, error) {
+
+	role, err := GetRoleByName(s, roleToFind)
+	if err != nil {
+		return false, err
+	}
+
+	for _, userExistingRoleID := range member.Roles {
+		if userExistingRoleID == role.ID {
+			return true, nil
+		}
+	}
+	return false, nil
+}

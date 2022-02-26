@@ -5,6 +5,7 @@ import (
 
 	"github.com/BruceJi7/fcc-bot-go/config"
 	disc "github.com/BruceJi7/fcc-bot-go/discordHelpers"
+	"github.com/BruceJi7/fcc-bot-go/eventHandlers/commands/commandHandlers/collab"
 	"github.com/BruceJi7/fcc-bot-go/eventHandlers/commands/commandHandlers/erase"
 
 	"github.com/bwmarrin/discordgo"
@@ -65,5 +66,17 @@ func AdminCommands(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			disc.SendLog(s, logmessage)
 			fmt.Println("Force log: ", logString)
 		}
+	}
+}
+func CollabCommands(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	if i.Type != discordgo.InteractionApplicationCommand {
+		return
+	}
+	interactionChannel, _ := disc.GetChannelByID(s, i.ChannelID)
+
+	data := i.ApplicationCommandData()
+	switch data.Name {
+	case "collabwith":
+		collab.CollabInvite(s, i, interactionChannel, data.Options)
 	}
 }

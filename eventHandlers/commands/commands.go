@@ -28,3 +28,16 @@ var ForceLogCommand = &discordgo.ApplicationCommand{
 		},
 	},
 }
+var CollaborationInviteCommand = &discordgo.ApplicationCommand{
+	Name:        "collabwith",
+	Type:        discordgo.ChatApplicationCommand,
+	Description: "Invite Someone to Collaborate",
+	Options: []*discordgo.ApplicationCommandOption{
+		{
+			Name:        "user",
+			Type:        discordgo.ApplicationCommandOptionUser,
+			Description: "Specify who to invite",
+			Required:    true,
+		},
+	},
+}
