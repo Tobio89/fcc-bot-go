@@ -10,11 +10,12 @@ type Commands struct {
 	bot *Bot
 }
 
-func (c *Commands) AddCommandHandlers() {
-	c.bot.Session.AddHandler(c.AdminCommands)
+func (c *Commands) Initialize() {
+	c.create()
+	c.bot.Session.AddHandler(c.AdminCommandGroup)
 }
 
-func (c *Commands) CreateCommands() {
+func (c *Commands) create() {
 
 	_, err := c.bot.Session.ApplicationCommandCreate(c.bot.Cfg.bot.id, c.bot.Cfg.server.guild, EraseCommand)
 	if err != nil {
@@ -79,7 +80,7 @@ var CollaborationInviteCommand = &discordgo.ApplicationCommand{
 	},
 }
 
-func (c *Commands) AdminCommands(s *discordgo.Session, i *discordgo.InteractionCreate) {
+func (c *Commands) AdminCommandGroup(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if i.Type != discordgo.InteractionApplicationCommand {
 		return
 	}
@@ -105,15 +106,9 @@ func (c *Commands) AdminCommands(s *discordgo.Session, i *discordgo.InteractionC
 	case "erase":
 
 		if len(options) == 0 {
-			// Triggered single erase mode
-
 			c.SingleErase(i, interactionChannel, interactionID, interactionMember)
-
 		} else {
-			// Multiple erase mode:
-
 			c.MultiErase(i, options, interactionChannel, interactionID, interactionMember)
-
 		}
 
 	case "forcelog":

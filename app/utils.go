@@ -45,6 +45,17 @@ func (u *Utils) GetRoleByName(roleName string) (role *discordgo.Role, err error)
 	return roles[0], errors.New("role not found")
 }
 
+func (u *Utils) GetRoleByID(roleID string) (role *discordgo.Role, err error) {
+	roles, _ := u.bot.Session.GuildRoles(u.bot.Cfg.server.guild)
+
+	for _, role := range roles {
+		if role.ID == roleID {
+			return role, nil
+		}
+	}
+	return roles[0], errors.New("role not found")
+}
+
 // Return boolean: does user have role, from role's name string
 func (u *Utils) UserHasRole(member *discordgo.Member, roleToFind string) (bool, error) {
 

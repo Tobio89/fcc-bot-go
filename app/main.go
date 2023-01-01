@@ -14,6 +14,7 @@ type ChannelCfg struct {
 	guild  string
 	logs   string
 	intros string
+	rfr    string
 }
 
 type BotCfg struct {
@@ -34,18 +35,21 @@ type Bot struct {
 	Commands *Commands
 }
 
-func main() {
-
+func init() {
 	err := godotenv.Load("local.env")
 	if err != nil {
 		panic("Could not load env file")
 	}
+}
+
+func main() {
 
 	cfg := &Config{
 		server: ChannelCfg{
 			guild:  "900729260531134474",
 			logs:   "904628203430219787",
 			intros: "1056444002754383942",
+			rfr:    "915490456983457833",
 		},
 		bot: BotCfg{
 			token: os.Getenv("TOKEN"),
@@ -70,10 +74,8 @@ func main() {
 	fccbot.Session.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentsGuildMembers | discordgo.IntentsAllWithoutPrivileged
 
 	// Add handlers before open
-	fccbot.Events.AddEventHandlers()
-
-	fccbot.Commands.CreateCommands()
-	fccbot.Commands.AddCommandHandlers()
+	fccbot.Events.Initialize()
+	fccbot.Commands.Initialize()
 
 	fccbot.Start()
 
