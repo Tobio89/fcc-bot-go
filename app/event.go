@@ -135,7 +135,7 @@ func (e *Events) rfrAdd(member *discordgo.Member, emojiUsed string) {
 			}
 		}
 		e.bot.Session.GuildMemberRoleAdd(e.bot.Cfg.server.guild, member.User.ID, role.ID)
-		e.bot.SendLog(fmt.Sprintf("%s User %s receives role %s", member.User.Username, RFRRoleSelected))
+		e.bot.SendLog(fmt.Sprintf("User %s receives role %s", member.User.Username, RFRRoleSelected))
 	}
 
 	// Check if they have the no-location role, and remove it
@@ -186,7 +186,7 @@ func (e *Events) rfrRemove(member *discordgo.Member, emojiUsed string) {
 				return
 			}
 			fmt.Println("Successfully removed ", RFRRoleSelected)
-			e.bot.SendLog(fmt.Sprintf("%s User %s loses role %s", member.User.Username, RFRRoleSelected))
+			e.bot.SendLog(fmt.Sprintf("User %s loses role %s", member.User.Username, RFRRoleSelected))
 		}
 
 		// If the user has none of the RFR roles, give them 'No-Location'
@@ -218,7 +218,7 @@ func (e *Events) rfrRemove(member *discordgo.Member, emojiUsed string) {
 		// If none of the location-based (RFR) roles
 		// Add No-location role
 		if shouldAddNoLocation {
-			e.bot.SendLog(fmt.Sprintf("%s User %s has no location-based roles, gains No-Location", member.User.Username))
+			e.bot.SendLog(fmt.Sprintf("User %s has no location-based roles, gains No-Location", member.User.Username))
 			fmt.Println("Add no location")
 			e.bot.Session.GuildMemberRoleAdd(e.bot.Cfg.server.guild, member.User.ID, noLocationRole.ID)
 		}
@@ -243,7 +243,7 @@ func (e *Events) onlineChatRoleAdd(member *discordgo.Member) {
 		fmt.Println("Error removing role")
 		fmt.Println(err)
 	}
-	e.bot.SendLog(fmt.Sprintf("%s User %s subscribes to Gather updates", member.User.Username))
+	e.bot.SendLog(fmt.Sprintf("User %s subscribes to Gather updates", member.User.Username))
 }
 
 func (e *Events) onlineChatRoleRemove(member *discordgo.Member) {
@@ -269,7 +269,7 @@ func (e *Events) onlineChatRoleRemove(member *discordgo.Member) {
 		fmt.Println(err)
 		return
 	}
-	e.bot.SendLog(fmt.Sprintf("%s User %s removes subscription to Gather updates", member.User.Username))
+	e.bot.SendLog(fmt.Sprintf("User %s removes subscription to Gather updates", member.User.Username))
 }
 
 func (e *Events) learningResourcePost(m *discordgo.MessageReactionAdd, learningDiscussionChannel *discordgo.Channel, learningResourcesChannel *discordgo.Channel) {
