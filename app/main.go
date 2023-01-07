@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -38,9 +39,23 @@ type Bot struct {
 }
 
 func init() {
-	err := godotenv.Load("local.env")
-	if err != nil {
-		panic("Could not load env file")
+	var prodModeFlag = flag.Bool("p", false, "Use dev environment file")
+	flag.Parse()
+
+	if *prodModeFlag {
+		err := godotenv.Load("prod.env")
+		if err != nil {
+			panic("Could not load prod env file")
+		} else {
+			fmt.Println("Using production envs...")
+		}
+	} else {
+		err := godotenv.Load("dev.env")
+		if err != nil {
+			panic("Could not load env file")
+		} else {
+			fmt.Println("Using development envs...")
+		}
 	}
 }
 
@@ -98,8 +113,6 @@ func (b *Bot) Start() {
 	if err != nil {
 		fmt.Println("Error initialising websocket:")
 		panic(err)
-	} else {
-		fmt.Println("FCCBot started up correctly\n(ctrl-c to exit)")
 	}
 }
 
