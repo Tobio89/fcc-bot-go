@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/BruceJi7/fcc-bot-go/app/msg"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -15,11 +16,25 @@ func (e *Events) Initialize() {
 	e.bot.Session.AddHandler(e.onMessageSent)
 	e.bot.Session.AddHandler(e.onReactionAdded)
 	e.bot.Session.AddHandler(e.onReactionRemoved)
+	e.bot.Session.AddHandler(e.onNewMember)
 }
 
 func (e *Events) onReady(s *discordgo.Session, _ *discordgo.Ready) {
-	logMessage := "Bot is here"
-	e.bot.SendLog(logMessage)
+	logMessage := "Bot was turned on"
+	e.bot.SendLog(msg.LogOnReady, logMessage)
+}
+
+func (e *Events) onNewMember(s *discordgo.Session, memberJoinEvent *discordgo.GuildMemberAdd) {
+
+	greeting := msg.Opening.GetRandom()
+	suggestion := msg.Suggestion.GetRandom()
+	secondSuggestion := msg.Suggestion.GetRandom()
+	closing := msg.Closing.GetRandom()
+
+	botWelcomeScript := fmt.Sprintf("%s, %s! %s introduce yourself, tell us your coding story.\n %s check out the react-for-roles channel and let us know where you're based!\n %s", greeting, memberJoinEvent.Mention(), suggestion, secondSuggestion, closing)
+
+	e.bot.Session.ChannelMessageSend(e.bot.Cfg.server.intros, botWelcomeScript)
+	e.bot.SendLog(msg.LogNewMember, fmt.Sprintf(memberJoinEvent.User.Username))
 }
 
 func (e *Events) onMessageSent(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -60,7 +75,7 @@ func (e *Events) handleIntroductionVerification(m *discordgo.MessageCreate) {
 	}
 
 	e.bot.Session.GuildMemberRoleAdd(e.bot.Cfg.server.guild, member.User.ID, "1056454967772323861")
-	e.bot.SendLog("Added verified")
+	e.bot.SendLog(msg.LogVerification, fmt.Sprintf("User %s became verified", member.User.Username))
 }
 
 func (e *Events) parseReactionAdded(m *discordgo.MessageReactionAdd) {
@@ -68,9 +83,8 @@ func (e *Events) parseReactionAdded(m *discordgo.MessageReactionAdd) {
 
 	member, err := e.bot.Utils.GetMemberByID(m.UserID)
 	if err != nil {
-		fmt.Println("Whilst parsing reaction added:")
-		fmt.Println("Error finding user")
-		fmt.Println(err)
+		e.bot.SendLog(msg.LogError, "Whilst parsing reaction add:")
+		e.bot.SendLog(msg.LogError, err.Error())
 		return
 	}
 
@@ -98,9 +112,8 @@ func (e *Events) parseReactionRemoved(m *discordgo.MessageReactionRemove) {
 
 	member, err := e.bot.Utils.GetMemberByID(m.UserID)
 	if err != nil {
-		fmt.Println("Whilst parsing reaction added:")
-		fmt.Println("Error finding user")
-		fmt.Println(err)
+		e.bot.SendLog(msg.LogError, "Whilst parsing reaction remove:")
+		e.bot.SendLog(msg.LogError, err.Error())
 		return
 	}
 
@@ -122,9 +135,8 @@ func (e *Events) rfrAdd(member *discordgo.Member, emojiUsed string) {
 
 		role, err := e.bot.Utils.GetRoleByName(RFRRoleSelected)
 		if err != nil {
-			fmt.Println("Whilst parsing reaction added:")
-			fmt.Println("Error finding role")
-			fmt.Println(err)
+			e.bot.SendLog(msg.LogError, "Whilst parsing reaction add, getting role:")
+			e.bot.SendLog(msg.LogError, err.Error())
 			return
 		}
 
@@ -135,7 +147,7 @@ func (e *Events) rfrAdd(member *discordgo.Member, emojiUsed string) {
 			}
 		}
 		e.bot.Session.GuildMemberRoleAdd(e.bot.Cfg.server.guild, member.User.ID, role.ID)
-		e.bot.SendLog(fmt.Sprintf("User %s receives role %s", member.User.Username, RFRRoleSelected))
+		e.bot.SendLog(msg.LogRFR, fmt.Sprintf("User %s receives role %s", member.User.Username, RFRRoleSelected))
 	}
 
 	// Check if they have the no-location role, and remove it
@@ -143,9 +155,8 @@ func (e *Events) rfrAdd(member *discordgo.Member, emojiUsed string) {
 		if userExistingRoleID == noLocationRole.ID {
 			err := e.bot.Session.GuildMemberRoleRemove(e.bot.Cfg.server.guild, member.User.ID, noLocationRole.ID)
 			if err != nil {
-				fmt.Println("Whilst parsing reaction removed:")
-				fmt.Println("Error removing no-location role")
-				fmt.Println(err)
+				e.bot.SendLog(msg.LogError, "Whilst parsing reaction add, getting role:")
+				e.bot.SendLog(msg.LogError, err.Error())
 			}
 		}
 	}
@@ -161,9 +172,8 @@ func (e *Events) rfrRemove(member *discordgo.Member, emojiUsed string) {
 		// Get full role object for RFR role used
 		role, err := e.bot.Utils.GetRoleByName(RFRRoleSelected)
 		if err != nil {
-			fmt.Println("Whilst parsing reaction removed:")
-			fmt.Println("Error finding role")
-			fmt.Println(err)
+			e.bot.SendLog(msg.LogError, "Whilst parsing reaction remove, getting role:")
+			e.bot.SendLog(msg.LogError, err.Error())
 			return
 		}
 
@@ -180,13 +190,11 @@ func (e *Events) rfrRemove(member *discordgo.Member, emojiUsed string) {
 
 			err = e.bot.Session.GuildMemberRoleRemove(e.bot.Cfg.server.guild, member.User.ID, role.ID)
 			if err != nil {
-				fmt.Println("Whilst parsing reaction removed:")
-				fmt.Println("Error removing role")
-				fmt.Println(err)
+				e.bot.SendLog(msg.LogError, "Whilst parsing reaction remove, removing role:")
+				e.bot.SendLog(msg.LogError, err.Error())
 				return
 			}
-			fmt.Println("Successfully removed ", RFRRoleSelected)
-			e.bot.SendLog(fmt.Sprintf("User %s loses role %s", member.User.Username, RFRRoleSelected))
+			e.bot.SendLog(msg.LogRFR, fmt.Sprintf("User %s loses role %s", member.User.Username, RFRRoleSelected))
 		}
 
 		// If the user has none of the RFR roles, give them 'No-Location'
@@ -218,8 +226,7 @@ func (e *Events) rfrRemove(member *discordgo.Member, emojiUsed string) {
 		// If none of the location-based (RFR) roles
 		// Add No-location role
 		if shouldAddNoLocation {
-			e.bot.SendLog(fmt.Sprintf("User %s has no location-based roles, gains No-Location", member.User.Username))
-			fmt.Println("Add no location")
+			e.bot.SendLog(msg.LogRFR, fmt.Sprintf("User %s has no location-based roles, gains No-Location", member.User.Username))
 			e.bot.Session.GuildMemberRoleAdd(e.bot.Cfg.server.guild, member.User.ID, noLocationRole.ID)
 		}
 
@@ -239,11 +246,11 @@ func (e *Events) onlineChatRoleAdd(member *discordgo.Member) {
 
 	err := e.bot.Session.GuildMemberRoleAdd(e.bot.Cfg.server.guild, member.User.ID, OnlineChatSubscriptionRole.ID)
 	if err != nil {
-		fmt.Println("Whilst parsing reaction added:")
-		fmt.Println("Error removing role")
-		fmt.Println(err)
+		e.bot.SendLog(msg.LogError, "Whilst adding Gather role:")
+		e.bot.SendLog(msg.LogError, err.Error())
+	} else {
+		e.bot.SendLog(msg.LogRFR, fmt.Sprintf("User %s subscribes to Gather updates", member.User.Username))
 	}
-	e.bot.SendLog(fmt.Sprintf("User %s subscribes to Gather updates", member.User.Username))
 }
 
 func (e *Events) onlineChatRoleRemove(member *discordgo.Member) {
@@ -264,22 +271,19 @@ func (e *Events) onlineChatRoleRemove(member *discordgo.Member) {
 
 	err := e.bot.Session.GuildMemberRoleRemove(e.bot.Cfg.server.guild, member.User.ID, OnlineChatSubscriptionRole.ID)
 	if err != nil {
-		fmt.Println("Whilst parsing reaction removed:")
-		fmt.Println("Error removing role")
-		fmt.Println(err)
+		e.bot.SendLog(msg.LogError, "Whilst parsing gather role add:")
+		e.bot.SendLog(msg.LogError, err.Error())
 		return
 	}
-	e.bot.SendLog(fmt.Sprintf("User %s removes subscription to Gather updates", member.User.Username))
+	e.bot.SendLog(msg.LogRFR, fmt.Sprintf("User %s removes subscription to Gather updates", member.User.Username))
 }
 
 func (e *Events) learningResourcePost(m *discordgo.MessageReactionAdd, learningDiscussionChannel *discordgo.Channel, learningResourcesChannel *discordgo.Channel) {
 
 	message, err := e.bot.Session.ChannelMessage(learningDiscussionChannel.ID, m.MessageID)
 	if err != nil {
-		fmt.Println("Whilst parsing reaction added")
-		fmt.Println("Whilst handling learning-discussion reaction")
-		fmt.Println("Error finding message")
-		fmt.Println(err)
+		e.bot.SendLog(msg.LogError, "Whilst parsing learning resource, finding msg:")
+		e.bot.SendLog(msg.LogError, err.Error())
 		return
 	}
 
@@ -292,7 +296,7 @@ func (e *Events) learningResourcePost(m *discordgo.MessageReactionAdd, learningD
 		messageContents := fmt.Sprintf("%s\nThanks, %s, who posted this resource: \n"+message.Content, e.makeMessageLink(message.Reference()), message.Author.Mention())
 		e.bot.Session.ChannelMessageSend(learningResourcesChannel.ID, messageContents)
 		e.bot.Session.MessageReactionAdd(learningDiscussionChannel.ID, message.ID, BotProcessedEmoji)
-		e.bot.SendLog(fmt.Sprintf("%s's post was added to Learning Resources", message.Author))
+		e.bot.SendLog(msg.LogLearning, fmt.Sprintf("%s's post was added to Learning Resources", message.Author))
 	}
 }
 

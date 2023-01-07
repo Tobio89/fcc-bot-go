@@ -2,8 +2,8 @@ package main
 
 import (
 	"errors"
-	"fmt"
 
+	"github.com/BruceJi7/fcc-bot-go/app/msg"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -77,8 +77,8 @@ func (u *Utils) GetMemberByID(userDetails string) (member *discordgo.Member, err
 	guildMembers, err := u.bot.Session.GuildMembers(u.bot.Cfg.server.guild, "", 1000)
 
 	if err != nil {
-		fmt.Println("Error finding member")
-		fmt.Println(err)
+		u.bot.SendLog(msg.LogError, "Whilst fetching member by ID:")
+		u.bot.SendLog(msg.LogError, err.Error())
 	}
 	for _, member := range guildMembers {
 		if member.User.ID == userDetails {

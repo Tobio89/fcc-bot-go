@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/BruceJi7/fcc-bot-go/app/msg"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -17,27 +18,19 @@ func (c *Commands) Initialize() {
 
 func (c *Commands) create() {
 
-	_, err := c.bot.Session.ApplicationCommandCreate(c.bot.Cfg.bot.id, c.bot.Cfg.server.guild, EraseCommand)
-	if err != nil {
-		fmt.Println("Error adding erase command:")
-		fmt.Println(err)
-	} else {
-		fmt.Println("Erase command added")
+	_, errErase := c.bot.Session.ApplicationCommandCreate(c.bot.Cfg.bot.id, c.bot.Cfg.server.guild, EraseCommand)
+	if errErase != nil {
+		c.bot.SendLog(msg.LogError, "Whilst adding erase command:")
+		c.bot.SendLog(msg.LogError, errErase.Error())
 	}
-	_, err = c.bot.Session.ApplicationCommandCreate(c.bot.Cfg.bot.id, c.bot.Cfg.server.guild, ForceLogCommand)
-	if err != nil {
-		fmt.Println("Error adding forcelog command:")
-		fmt.Println(err)
-	} else {
-		fmt.Println("Forcelog command added")
+	_, errForce := c.bot.Session.ApplicationCommandCreate(c.bot.Cfg.bot.id, c.bot.Cfg.server.guild, ForceLogCommand)
+	if errForce != nil {
+		c.bot.SendLog(msg.LogError, "Whilst adding forcelog command:")
+		c.bot.SendLog(msg.LogError, errForce.Error())
 	}
-	// _, err = b.Session.ApplicationCommandCreate(c.bot.Cfg.id, c.bot.Cfg.er.guild, CollaborationInviteCommand)
-	// if err != nil {
-	// 	fmt.Println("Error adding collab invitation command:")
-	// 	fmt.Println(err)
-	// } else {
-	// 	fmt.Println("Collab command added")
-	// }
+	if errErase == nil && errForce == nil {
+		c.bot.SendLog(msg.LogOnReady, "All commands successfully added")
+	}
 }
 
 var EraseCommand = &discordgo.ApplicationCommand{
@@ -94,10 +87,12 @@ func (c *Commands) AdminCommandGroup(s *discordgo.Session, i *discordgo.Interact
 
 	interactionMemberIsAdmin, err := c.bot.Utils.IsUserAdmin(interactionMember.User.ID)
 	if err != nil {
-		fmt.Println("Error on evaluating admin permissions:")
-		fmt.Println(err)
+		c.bot.SendLog(msg.LogError, "Whilst evaluating admin privileges:")
+		c.bot.SendLog(msg.LogError, err.Error())
+		return
 	} else {
 		if !interactionMemberIsAdmin {
+			c.bot.SendLog(msg.LogError, fmt.Sprintf("admin commands were exposed to %s", interactionMember.User.ID))
 			return
 		}
 	}
@@ -112,7 +107,6 @@ func (c *Commands) AdminCommandGroup(s *discordgo.Session, i *discordgo.Interact
 		}
 
 	case "forcelog":
-		fmt.Println("Force Log")
 
 		err := s.InteractionRespond(i.Interaction,
 			&discordgo.InteractionResponse{
@@ -121,12 +115,11 @@ func (c *Commands) AdminCommandGroup(s *discordgo.Session, i *discordgo.Interact
 			})
 
 		if err != nil {
-			fmt.Println("Error responding to command Forcelog")
-			fmt.Println(err)
+			c.bot.SendLog(msg.LogError, "Whilst responding to command forcelog:")
+			c.bot.SendLog(msg.LogError, err.Error())
 		} else {
 			logString := options[0].StringValue()
-			c.bot.SendLog(fmt.Sprintf("By User %s: %s", interactionMember.User.Username, logString))
-			fmt.Println("Force log: ", logString)
+			c.bot.SendLog(msg.CommandForceLog, fmt.Sprintf("By User %s: %s", interactionMember.User.Username, logString))
 		}
 	}
 }
@@ -140,19 +133,17 @@ func (c *Commands) SingleErase(i *discordgo.InteractionCreate, interactionChanne
 		})
 
 	if err != nil {
-		fmt.Println("Error responding to command Erase")
-		fmt.Println(err)
+		c.bot.SendLog(msg.LogError, "Whilst responding to command erase (single):")
+		c.bot.SendLog(msg.LogError, err.Error())
 	} else {
-		fmt.Println("Trigger Erase Command")
 		deleteErr := c.DeleteMessages(1, interactionChannel.ID, interactionID)
 		if deleteErr != nil {
+			c.bot.SendLog(msg.LogError, "Whilst attempting to delete:")
 			logMessage := fmt.Sprintf("User %s | channel %s | %s", interactionMember.User.Username, interactionChannel.Name, deleteErr)
-			c.bot.SendLog(logMessage)
-			fmt.Println("Error deleting one message")
-			fmt.Println(deleteErr)
+			c.bot.SendLog(msg.LogError, logMessage)
 		} else {
 			logMessage := fmt.Sprintf("User %s | channel %s", interactionMember.User.Username, interactionChannel.Name)
-			c.bot.SendLog(logMessage)
+			c.bot.SendLog(msg.CommandErase, logMessage)
 		}
 	}
 
@@ -161,26 +152,23 @@ func (c *Commands) SingleErase(i *discordgo.InteractionCreate, interactionChanne
 func (c *Commands) MultiErase(i *discordgo.InteractionCreate, options []*discordgo.ApplicationCommandInteractionDataOption, interactionChannel *discordgo.Channel, interactionID string, interactionMember *discordgo.Member) {
 
 	eraseAmount := options[0].IntValue()
-	fmt.Println(eraseAmount)
 	err := c.bot.Session.InteractionRespond(i.Interaction,
 		&discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{Content: "Messages Erased", Flags: 1 << 6},
 		})
 	if err != nil {
-		fmt.Println("Error responding to command Erase")
-		fmt.Println(err)
+		c.bot.SendLog(msg.LogError, "Whilst responding to command erase (multi):")
+		c.bot.SendLog(msg.LogError, err.Error())
 	} else {
-		fmt.Println("Trigger Multiple Erase Command: ", eraseAmount)
 		deleteErr := c.DeleteMessages(int(eraseAmount), interactionChannel.ID, interactionID)
 		if deleteErr != nil {
-			logMessage := fmt.Sprintf("User %s | channel %s | %s", interactionMember.User.Username, interactionChannel.Name, deleteErr)
-			c.bot.SendLog(logMessage)
-			fmt.Println("Error deleting messages")
-			fmt.Println(deleteErr)
+			logMessage := fmt.Sprintf("User %s | channel %s | amount %d | %s", interactionMember.User.Username, interactionChannel.Name, eraseAmount, deleteErr)
+			c.bot.SendLog(msg.LogError, "Whilst attempting to delete:")
+			c.bot.SendLog(msg.LogError, logMessage)
 		} else {
-			logMessage := fmt.Sprintf("User %s | %d messages | channel %s", interactionMember.User.Username, eraseAmount, interactionChannel.Name)
-			c.bot.SendLog(logMessage)
+			logMessage := fmt.Sprintf("User %s | channel %s | amount %d | %s", interactionMember.User.Username, interactionChannel.Name, eraseAmount, deleteErr)
+			c.bot.SendLog(msg.CommandErase, logMessage)
 		}
 
 	}
@@ -190,7 +178,6 @@ func (c *Commands) DeleteMessages(howMany int, channel string, messageID string)
 
 	messages, err := c.bot.Session.ChannelMessages(channel, howMany, messageID, "", "")
 	if err != nil {
-		fmt.Println("Error getting messages to delete")
 		return err
 	}
 	var messageIDs []string

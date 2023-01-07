@@ -5,7 +5,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/BruceJi7/fcc-bot-go/app/msg"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 )
@@ -102,15 +104,22 @@ func (b *Bot) Start() {
 }
 
 // Send a message to the log channel
-func (b *Bot) SendLog(logMessage string) {
-	b.Session.ChannelMessageSend(b.Cfg.server.logs, logMessage)
+func (b *Bot) SendLog(logPrefix, logMessage string) {
+	t := time.Now()
+	formattedTime := fmt.Sprintf("[%d/%02d/%02d T%02d:%02d:%02d]",
+		t.Year(), t.Month(), t.Day(),
+		t.Hour(), t.Minute(), t.Second())
+
+	msgString := fmt.Sprintf("%s %s %s", logPrefix, formattedTime, logMessage)
+	b.Session.ChannelMessageSend(b.Cfg.server.logs, fmt.Sprintf("`%s`", msgString))
+	fmt.Println(msgString)
 }
 
 func (b *Bot) SendMessageToChannel(channelName string, message string) {
 	destChannel, err := b.Utils.GetChannelByName(channelName)
 	if err != nil {
-		fmt.Println("Error finding channel " + channelName)
-		fmt.Println(err)
+		b.SendLog(msg.LogError, "Whilst sending msg to channel:")
+		b.SendLog(msg.LogError, err.Error())
 	} else {
 		b.Session.ChannelMessageSend(destChannel.ID, message)
 	}
