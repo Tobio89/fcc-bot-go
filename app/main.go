@@ -46,14 +46,14 @@ func main() {
 
 	cfg := &Config{
 		server: ChannelCfg{
-			guild:  "900729260531134474",
-			logs:   "904628203430219787",
-			intros: "1056444002754383942",
-			rfr:    "915490456983457833",
+			guild:  os.Getenv("GUILD_ID"),
+			logs:   os.Getenv("LOG_CHANNEL"),
+			intros: os.Getenv("INTRO_CHANNEL"),
+			rfr:    os.Getenv("RFR_POST"),
 		},
 		bot: BotCfg{
-			token: os.Getenv("TOKEN"),
-			id:    "900734438416191508",
+			token: os.Getenv("BOT_TOKEN"),
+			id:    os.Getenv("BOT_ID"),
 		},
 	}
 
