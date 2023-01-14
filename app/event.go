@@ -128,7 +128,6 @@ func (e *Events) parseReactionRemoved(m *discordgo.MessageReactionRemove) {
 }
 
 func (e *Events) rfrAdd(member *discordgo.Member, emojiUsed string) {
-	noLocationRole, _ := e.bot.Utils.GetRoleByName("No-Location")
 
 	//If the role matches one of the RFR roles
 	if RFRRoleSelected, exists := RFRMap[emojiUsed]; exists {
@@ -149,21 +148,9 @@ func (e *Events) rfrAdd(member *discordgo.Member, emojiUsed string) {
 		e.bot.Session.GuildMemberRoleAdd(e.bot.Cfg.server.guild, member.User.ID, role.ID)
 		e.bot.SendLog(msg.LogRFR, fmt.Sprintf("User %s receives role %s", member.User.Username, RFRRoleSelected))
 	}
-
-	// Check if they have the no-location role, and remove it
-	for _, userExistingRoleID := range member.Roles {
-		if userExistingRoleID == noLocationRole.ID {
-			err := e.bot.Session.GuildMemberRoleRemove(e.bot.Cfg.server.guild, member.User.ID, noLocationRole.ID)
-			if err != nil {
-				e.bot.SendLog(msg.LogError, "Whilst parsing reaction add, getting role:")
-				e.bot.SendLog(msg.LogError, err.Error())
-			}
-		}
-	}
 }
 
 func (e *Events) rfrRemove(member *discordgo.Member, emojiUsed string) {
-	noLocationRole, _ := e.bot.Utils.GetRoleByName("No-Location")
 
 	// If the role matches one of the RFR roles
 	// RFRRoleSelected == role that the reaction was for
@@ -196,40 +183,6 @@ func (e *Events) rfrRemove(member *discordgo.Member, emojiUsed string) {
 			}
 			e.bot.SendLog(msg.LogRFR, fmt.Sprintf("User %s loses role %s", member.User.Username, RFRRoleSelected))
 		}
-
-		// If the user has none of the RFR roles, give them 'No-Location'
-
-		shouldAddNoLocation := true
-		for _, usersRoleID := range member.Roles { // Check over the roles the user has
-
-			roleUserHas, _ := e.bot.Utils.GetRoleByID(usersRoleID)
-
-			if roleUserHas.Name == RFRRoleSelected {
-
-				continue
-			} else {
-
-				// Scan the list of RFR roles for this role
-				for _, RFRRole := range RFRRoles {
-					// If RFR list contains the current role we're checking for
-					if RFRRole == roleUserHas.Name {
-						shouldAddNoLocation = false
-						break
-					}
-				}
-
-				if !shouldAddNoLocation {
-					break
-				}
-			}
-		}
-		// If none of the location-based (RFR) roles
-		// Add No-location role
-		if shouldAddNoLocation {
-			e.bot.SendLog(msg.LogRFR, fmt.Sprintf("User %s has no location-based roles, gains No-Location", member.User.Username))
-			e.bot.Session.GuildMemberRoleAdd(e.bot.Cfg.server.guild, member.User.ID, noLocationRole.ID)
-		}
-
 	}
 }
 
