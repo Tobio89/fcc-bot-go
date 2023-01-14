@@ -14,10 +14,11 @@ import (
 )
 
 type ChannelCfg struct {
-	guild  string
-	logs   string
-	intros string
-	rfr    string
+	guild             string
+	logs              string
+	intros            string
+	rfr               string
+	learningResources string
 }
 
 type BotCfg struct {
@@ -68,10 +69,11 @@ func main() {
 
 	cfg := &Config{
 		server: ChannelCfg{
-			guild:  os.Getenv("GUILD_ID"),
-			logs:   os.Getenv("LOG_CHANNEL"),
-			intros: os.Getenv("INTRO_CHANNEL"),
-			rfr:    os.Getenv("RFR_POST"),
+			guild:             os.Getenv("GUILD_ID"),
+			logs:              os.Getenv("LOG_CHANNEL"),
+			intros:            os.Getenv("INTRO_CHANNEL"),
+			rfr:               os.Getenv("RFR_POST"),
+			learningResources: os.Getenv("LEARNING_RESOURCE_CHANNEL"),
 		},
 		bot: BotCfg{
 			token: os.Getenv("BOT_TOKEN"),

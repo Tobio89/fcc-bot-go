@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/BruceJi7/fcc-bot-go/app/msg"
 	"github.com/bwmarrin/discordgo"
@@ -14,21 +15,32 @@ type Commands struct {
 func (c *Commands) Initialize() {
 	c.create()
 	c.bot.Session.AddHandler(c.AdminCommandGroup)
+	c.bot.Session.AddHandler(c.RegularCommandGroup)
 }
 
 func (c *Commands) create() {
 
-	_, errErase := c.bot.Session.ApplicationCommandCreate(c.bot.Cfg.bot.id, c.bot.Cfg.server.guild, EraseCommand)
-	if errErase != nil {
+	allSuccessful := true
+
+	if _, err := c.bot.Session.ApplicationCommandCreate(c.bot.Cfg.bot.id, c.bot.Cfg.server.guild, EraseCommand); err != nil {
 		c.bot.SendLog(msg.LogError, "Whilst adding erase command:")
-		c.bot.SendLog(msg.LogError, errErase.Error())
+		c.bot.SendLog(msg.LogError, err.Error())
+		allSuccessful = false
 	}
-	_, errForce := c.bot.Session.ApplicationCommandCreate(c.bot.Cfg.bot.id, c.bot.Cfg.server.guild, ForceLogCommand)
-	if errForce != nil {
+
+	if _, err := c.bot.Session.ApplicationCommandCreate(c.bot.Cfg.bot.id, c.bot.Cfg.server.guild, ForceLogCommand); err != nil {
 		c.bot.SendLog(msg.LogError, "Whilst adding forcelog command:")
-		c.bot.SendLog(msg.LogError, errForce.Error())
+		c.bot.SendLog(msg.LogError, err.Error())
+		allSuccessful = false
 	}
-	if errErase == nil && errForce == nil {
+
+	if _, err := c.bot.Session.ApplicationCommandCreate(c.bot.Cfg.bot.id, c.bot.Cfg.server.guild, LearningResourceCommand); err != nil {
+		c.bot.SendLog(msg.LogError, "Whilst adding learning resource command:")
+		c.bot.SendLog(msg.LogError, err.Error())
+		allSuccessful = false
+	}
+
+	if allSuccessful {
 		c.bot.SendLog(msg.LogOnReady, "All commands successfully added")
 	}
 }
@@ -59,15 +71,22 @@ var ForceLogCommand = &discordgo.ApplicationCommand{
 		},
 	},
 }
-var CollaborationInviteCommand = &discordgo.ApplicationCommand{
-	Name:        "collabwith",
+
+var LearningResourceCommand = &discordgo.ApplicationCommand{
+	Name:        "learning-resource",
 	Type:        discordgo.ChatApplicationCommand,
-	Description: "Invite Someone to Collaborate",
+	Description: "Submit a useful learning resource",
 	Options: []*discordgo.ApplicationCommandOption{
 		{
-			Name:        "user",
-			Type:        discordgo.ApplicationCommandOptionUser,
-			Description: "Specify who to invite",
+			Name:        "resource-url",
+			Type:        discordgo.ApplicationCommandOptionString,
+			Description: "A valid url",
+			Required:    true,
+		},
+		{
+			Name:        "resource-description",
+			Type:        discordgo.ApplicationCommandOptionString,
+			Description: "A description of the resource. What language is it for? What can we learn from it?",
 			Required:    true,
 		},
 	},
@@ -121,6 +140,44 @@ func (c *Commands) AdminCommandGroup(s *discordgo.Session, i *discordgo.Interact
 			logString := options[0].StringValue()
 			c.bot.SendLog(msg.CommandForceLog, fmt.Sprintf("By User %s: %s", interactionMember.User.Username, logString))
 		}
+	}
+}
+
+func (c *Commands) RegularCommandGroup(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	if i.Type != discordgo.InteractionApplicationCommand {
+		return
+	}
+
+	data := i.ApplicationCommandData()
+	options := data.Options
+	interactionMember := i.Member
+
+	switch data.Name {
+	case "learning-resource":
+
+		resourceUrl := options[0].StringValue()
+		resourceDescription := options[1].StringValue()
+
+		if _, err := url.ParseRequestURI(resourceUrl); err != nil {
+			s.InteractionRespond(i.Interaction,
+				&discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{Content: "Whoops! It looks like your URL was invalid", Flags: 1 << 6},
+				})
+
+		} else {
+
+			messageContents := fmt.Sprintf("Thanks, %s, who posted this resource:\n%s\nDescription: %s", interactionMember.User.Mention(), resourceUrl, resourceDescription)
+			c.bot.Session.ChannelMessageSend(c.bot.Cfg.server.learningResources, messageContents)
+			c.bot.SendLog(msg.LogLearning, fmt.Sprintf("%s submitted a Learning Resource via the bot", interactionMember.User.Username))
+
+			s.InteractionRespond(i.Interaction,
+				&discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{Content: "Thanks for posting a learning resource!", Flags: 1 << 6},
+				})
+		}
+
 	}
 }
 
