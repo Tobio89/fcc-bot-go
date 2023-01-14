@@ -70,11 +70,11 @@ func (e *Events) handleIntroductionVerification(m *discordgo.MessageCreate) {
 		return
 	}
 
-	if hasRole, err := e.bot.Utils.UserHasRole(member, "verified"); err != nil || hasRole {
+	if hasRole, err := e.bot.Utils.UserHasRoleByRoleID(member, e.bot.Cfg.roles.verified); err != nil || hasRole {
 		return
 	}
 
-	e.bot.Session.GuildMemberRoleAdd(e.bot.Cfg.server.guild, member.User.ID, "1056454967772323861")
+	e.bot.Session.GuildMemberRoleAdd(e.bot.Cfg.server.guild, member.User.ID, e.bot.Cfg.roles.verified)
 	e.bot.SendLog(msg.LogVerification, fmt.Sprintf("User %s became verified", member.User.Username))
 }
 

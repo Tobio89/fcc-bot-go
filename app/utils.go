@@ -57,7 +57,7 @@ func (u *Utils) GetRoleByID(roleID string) (role *discordgo.Role, err error) {
 }
 
 // Return boolean: does user have role, from role's name string
-func (u *Utils) UserHasRole(member *discordgo.Member, roleToFind string) (bool, error) {
+func (u *Utils) UserHasRoleByRoleName(member *discordgo.Member, roleToFind string) (bool, error) {
 
 	role, err := u.GetRoleByName(roleToFind)
 	if err != nil {
@@ -66,6 +66,17 @@ func (u *Utils) UserHasRole(member *discordgo.Member, roleToFind string) (bool, 
 
 	for _, userExistingRoleID := range member.Roles {
 		if userExistingRoleID == role.ID {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// Return boolean: does user have role, from role's ID string
+func (u *Utils) UserHasRoleByRoleID(member *discordgo.Member, roleToFind string) (bool, error) {
+
+	for _, userExistingRoleID := range member.Roles {
+		if userExistingRoleID == roleToFind {
 			return true, nil
 		}
 	}

@@ -28,6 +28,7 @@ type BotCfg struct {
 type Config struct {
 	server ChannelCfg
 	bot    BotCfg
+	roles  Roles
 }
 
 type Bot struct {
@@ -36,6 +37,10 @@ type Bot struct {
 	Utils    *Utils
 	Events   *Events
 	Commands *Commands
+}
+
+type Roles struct {
+	verified string
 }
 
 func init() {
@@ -71,6 +76,9 @@ func main() {
 		bot: BotCfg{
 			token: os.Getenv("BOT_TOKEN"),
 			id:    os.Getenv("BOT_ID"),
+		},
+		roles: Roles{
+			verified: os.Getenv("ROLE_VERIFIED"),
 		},
 	}
 
