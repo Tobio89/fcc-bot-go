@@ -224,7 +224,7 @@ func (c *Commands) MultiErase(i *discordgo.InteractionCreate, options []*discord
 			c.bot.SendLog(msg.LogError, "Whilst attempting to delete:")
 			c.bot.SendLog(msg.LogError, logMessage)
 		} else {
-			logMessage := fmt.Sprintf("User %s | channel %s | amount %d | %s", interactionMember.User.Username, interactionChannel.Name, eraseAmount, deleteErr)
+			logMessage := fmt.Sprintf("User %s | channel %s | amount %d", interactionMember.User.Username, interactionChannel.Name, eraseAmount)
 			c.bot.SendLog(msg.CommandErase, logMessage)
 		}
 
