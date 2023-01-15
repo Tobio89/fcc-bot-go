@@ -28,6 +28,12 @@ func (c *Commands) create() {
 		allSuccessful = false
 	}
 
+	if _, err := c.bot.Session.ApplicationCommandCreate(c.bot.Cfg.bot.id, c.bot.Cfg.server.guild, StealthEraseCommand); err != nil {
+		c.bot.SendLog(msg.LogError, "Whilst adding erase-quietly command:")
+		c.bot.SendLog(msg.LogError, err.Error())
+		allSuccessful = false
+	}
+
 	if _, err := c.bot.Session.ApplicationCommandCreate(c.bot.Cfg.bot.id, c.bot.Cfg.server.guild, ForceLogCommand); err != nil {
 		c.bot.SendLog(msg.LogError, "Whilst adding forcelog command:")
 		c.bot.SendLog(msg.LogError, err.Error())
@@ -51,9 +57,27 @@ var EraseCommand = &discordgo.ApplicationCommand{
 	Description: "Erase messages in a channel",
 	Options: []*discordgo.ApplicationCommandOption{
 		{
-			Name:        "multiple",
-			Type:        discordgo.ApplicationCommandOptionInteger,
-			Description: "Specify amount to erase",
+			Name:        "reason",
+			Type:        discordgo.ApplicationCommandOptionString,
+			Description: "Specify reason for erasing",
+			Required:    true,
+		},
+		{
+			Name:        "starting-point",
+			Type:        discordgo.ApplicationCommandOptionString,
+			Description: "Specify starting post id",
+		},
+	},
+}
+var StealthEraseCommand = &discordgo.ApplicationCommand{
+	Name:        "erase-quietly",
+	Type:        discordgo.ChatApplicationCommand,
+	Description: "Erase messages in a channel",
+	Options: []*discordgo.ApplicationCommandOption{
+		{
+			Name:        "starting-point",
+			Type:        discordgo.ApplicationCommandOptionString,
+			Description: "Specify starting post id",
 		},
 	},
 }
@@ -117,12 +141,31 @@ func (c *Commands) AdminCommandGroup(s *discordgo.Session, i *discordgo.Interact
 	}
 
 	switch data.Name {
-	case "erase":
+	case "erase", "erase-quietly":
 
-		if len(options) == 0 {
-			c.SingleErase(i, interactionChannel, interactionID, interactionMember)
+		reason := ""
+		postID := ""
+
+		for _, opt := range options {
+			if opt.Name == "reason" {
+				reason = opt.StringValue()
+			} else if opt.Name == "starting-point" {
+				postID = opt.StringValue()
+			}
+		}
+
+		if postID != "" {
+			if reason != "" {
+				c.MultiEraseWithReason(i, interactionChannel, interactionID, interactionMember, postID, reason)
+			} else {
+				c.MultiEraseNoReason(i, interactionChannel, interactionID, interactionMember, postID)
+			}
 		} else {
-			c.MultiErase(i, options, interactionChannel, interactionID, interactionMember)
+			if reason != "" {
+				c.SingleEraseWithReason(i, interactionChannel, interactionID, interactionMember, reason)
+			} else {
+				c.SingleEraseNoReason(i, interactionChannel, interactionID, interactionMember)
+			}
 		}
 
 	case "forcelog":
@@ -181,7 +224,7 @@ func (c *Commands) RegularCommandGroup(s *discordgo.Session, i *discordgo.Intera
 	}
 }
 
-func (c *Commands) SingleErase(i *discordgo.InteractionCreate, interactionChannel *discordgo.Channel, interactionID string, interactionMember *discordgo.Member) {
+func (c *Commands) SingleEraseNoReason(i *discordgo.InteractionCreate, interactionChannel *discordgo.Channel, interactionID string, interactionMember *discordgo.Member) {
 
 	err := c.bot.Session.InteractionRespond(i.Interaction,
 		&discordgo.InteractionResponse{
@@ -193,7 +236,7 @@ func (c *Commands) SingleErase(i *discordgo.InteractionCreate, interactionChanne
 		c.bot.SendLog(msg.LogError, "Whilst responding to command erase (single):")
 		c.bot.SendLog(msg.LogError, err.Error())
 	} else {
-		deleteErr := c.DeleteMessages(1, interactionChannel.ID, interactionID)
+		deleteErr := c.DeleteSingleMessage(interactionChannel.ID, interactionID)
 		if deleteErr != nil {
 			c.bot.SendLog(msg.LogError, "Whilst attempting to delete:")
 			logMessage := fmt.Sprintf("User %s | channel %s | %s", interactionMember.User.Username, interactionChannel.Name, deleteErr)
@@ -203,41 +246,125 @@ func (c *Commands) SingleErase(i *discordgo.InteractionCreate, interactionChanne
 			c.bot.SendLog(msg.CommandErase, logMessage)
 		}
 	}
-
 }
 
-func (c *Commands) MultiErase(i *discordgo.InteractionCreate, options []*discordgo.ApplicationCommandInteractionDataOption, interactionChannel *discordgo.Channel, interactionID string, interactionMember *discordgo.Member) {
+func (c *Commands) SingleEraseWithReason(i *discordgo.InteractionCreate, interactionChannel *discordgo.Channel, interactionID string, interactionMember *discordgo.Member, reason string) {
 
-	eraseAmount := options[0].IntValue()
+	deleteErr := c.DeleteSingleMessage(interactionChannel.ID, interactionID)
+	if deleteErr != nil {
+		c.bot.SendLog(msg.LogError, "Whilst attempting to delete:")
+		logMessage := fmt.Sprintf("User %s | channel %s | %s", interactionMember.User.Username, interactionChannel.Name, deleteErr)
+		c.bot.SendLog(msg.LogError, logMessage)
+	} else {
+		logMessage := fmt.Sprintf("User %s | channel %s | reason \"%s\"", interactionMember.User.Username, interactionChannel.Name, reason)
+		c.bot.SendLog(msg.CommandErase, logMessage)
+		eraseReasonMessage := fmt.Sprintf("User %s erased messages in this channel, giving the reason:\n*%s*", interactionMember.User.Username, reason)
+		c.bot.Session.ChannelMessageSend(interactionChannel.ID, eraseReasonMessage)
+	}
+
+	content := "Message Erased"
+	if deleteErr != nil {
+		content = "Whoops! Failed to erase messages. See log channel for more information"
+	}
+
 	err := c.bot.Session.InteractionRespond(i.Interaction,
 		&discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{Content: "Messages Erased", Flags: 1 << 6},
+			Data: &discordgo.InteractionResponseData{Content: content, Flags: 1 << 6},
+		})
+
+	if err != nil {
+		c.bot.SendLog(msg.LogError, "Whilst responding to command erase (single):")
+		c.bot.SendLog(msg.LogError, err.Error())
+	}
+}
+
+func (c *Commands) MultiEraseNoReason(i *discordgo.InteractionCreate, interactionChannel *discordgo.Channel, interactionID string, interactionMember *discordgo.Member, eraseFromPostID string) {
+
+	deleteErr := c.DeleteMultipleMessages(eraseFromPostID, interactionChannel.ID, interactionID)
+	if deleteErr != nil {
+		logMessage := fmt.Sprintf("User %s | channel %s | %s", interactionMember.User.Username, interactionChannel.Name, deleteErr)
+		c.bot.SendLog(msg.LogError, "Whilst attempting to delete:")
+		c.bot.SendLog(msg.LogError, logMessage)
+	} else {
+		logMessage := fmt.Sprintf("User %s | channel %s", interactionMember.User.Username, interactionChannel.Name)
+		c.bot.SendLog(msg.CommandErase, logMessage)
+	}
+
+	content := "Messages Erased"
+	if deleteErr != nil {
+		content = "Whoops! Failed to erase messages. See log channel for more information"
+	}
+
+	responseErr := c.bot.Session.InteractionRespond(i.Interaction,
+		&discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{Content: content, Flags: 1 << 6},
+		})
+	if responseErr != nil {
+		c.bot.SendLog(msg.LogError, "Whilst responding to command erase (multi):")
+		c.bot.SendLog(msg.LogError, responseErr.Error())
+	}
+}
+
+func (c *Commands) MultiEraseWithReason(i *discordgo.InteractionCreate, interactionChannel *discordgo.Channel, interactionID string, interactionMember *discordgo.Member, eraseFromPostID, reason string) {
+
+	deleteErr := c.DeleteMultipleMessages(eraseFromPostID, interactionChannel.ID, interactionID)
+	if deleteErr != nil {
+		logMessage := fmt.Sprintf("User %s | channel %s | %s", interactionMember.User.Username, interactionChannel.Name, deleteErr)
+		c.bot.SendLog(msg.LogError, "Whilst attempting to delete:")
+		c.bot.SendLog(msg.LogError, logMessage)
+	} else {
+		logMessage := fmt.Sprintf("User %s | channel %s | reason \"%s\"", interactionMember.User.Username, interactionChannel.Name, reason)
+		c.bot.SendLog(msg.CommandErase, logMessage)
+		eraseReasonMessage := fmt.Sprintf("User %s erased messages in this channel, giving the reason:\n*%s*", interactionMember.User.Username, reason)
+		c.bot.Session.ChannelMessageSend(interactionChannel.ID, eraseReasonMessage)
+	}
+
+	content := "Messages Erased"
+	if deleteErr != nil {
+		content = "Whoops! Failed to erase messages. See log channel for more information"
+	}
+
+	err := c.bot.Session.InteractionRespond(i.Interaction,
+		&discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{Content: content, Flags: 1 << 6},
 		})
 	if err != nil {
 		c.bot.SendLog(msg.LogError, "Whilst responding to command erase (multi):")
 		c.bot.SendLog(msg.LogError, err.Error())
-	} else {
-		deleteErr := c.DeleteMessages(int(eraseAmount), interactionChannel.ID, interactionID)
-		if deleteErr != nil {
-			logMessage := fmt.Sprintf("User %s | channel %s | amount %d | %s", interactionMember.User.Username, interactionChannel.Name, eraseAmount, deleteErr)
-			c.bot.SendLog(msg.LogError, "Whilst attempting to delete:")
-			c.bot.SendLog(msg.LogError, logMessage)
-		} else {
-			logMessage := fmt.Sprintf("User %s | channel %s | amount %d", interactionMember.User.Username, interactionChannel.Name, eraseAmount)
-			c.bot.SendLog(msg.CommandErase, logMessage)
-		}
-
 	}
 }
 
-func (c *Commands) DeleteMessages(howMany int, channel string, messageID string) error {
+func (c *Commands) DeleteSingleMessage(channel string, messageID string) error {
 
-	messages, err := c.bot.Session.ChannelMessages(channel, howMany, messageID, "", "")
+	messages, err := c.bot.Session.ChannelMessages(channel, 1, messageID, "", "")
 	if err != nil {
 		return err
 	}
 	var messageIDs []string
+
+	for _, m := range messages {
+		messageIDs = append(messageIDs, m.ID)
+	}
+	messageIDs = append(messageIDs, messageID)
+
+	err = c.bot.Session.ChannelMessagesBulkDelete(channel, messageIDs)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Commands) DeleteMultipleMessages(eraseFromPostID, channel string, messageID string) error {
+
+	messages, err := c.bot.Session.ChannelMessages(channel, 100, messageID, eraseFromPostID, "")
+	if err != nil {
+		return err
+	}
+	messageIDs := []string{eraseFromPostID}
 
 	for _, m := range messages {
 		messageIDs = append(messageIDs, m.ID)
