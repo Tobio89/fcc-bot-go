@@ -135,7 +135,6 @@ func (c *Commands) AdminCommandGroup(s *discordgo.Session, i *discordgo.Interact
 		return
 	} else {
 		if !interactionMemberIsAdmin {
-			c.bot.SendLog(msg.LogError, fmt.Sprintf("admin commands were exposed to %s", interactionMember.User.ID))
 			return
 		}
 	}
