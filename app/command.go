@@ -65,7 +65,13 @@ var EraseCommand = &discordgo.ApplicationCommand{
 		{
 			Name:        "starting-point",
 			Type:        discordgo.ApplicationCommandOptionString,
-			Description: "Specify starting post id",
+			Description: "Specify starting post ID",
+			Required:    true,
+		},
+		{
+			Name:        "ending-point",
+			Type:        discordgo.ApplicationCommandOptionString,
+			Description: "Specify post ID to erase until, or 'end' to erase til end",
 		},
 	},
 }
@@ -78,6 +84,12 @@ var StealthEraseCommand = &discordgo.ApplicationCommand{
 			Name:        "starting-point",
 			Type:        discordgo.ApplicationCommandOptionString,
 			Description: "Specify starting post id",
+			Required:    true,
+		},
+		{
+			Name:        "ending-point",
+			Type:        discordgo.ApplicationCommandOptionString,
+			Description: "Specify post ID to erase until, or 'end' to erase til end",
 		},
 	},
 }
@@ -143,27 +155,34 @@ func (c *Commands) AdminCommandGroup(s *discordgo.Session, i *discordgo.Interact
 	case "erase", "erase-quietly":
 
 		reason := ""
-		postID := ""
+		startingPostID := ""
+		untilPostID := ""
 
 		for _, opt := range options {
 			if opt.Name == "reason" {
 				reason = opt.StringValue()
 			} else if opt.Name == "starting-point" {
-				postID = opt.StringValue()
+				startingPostID = opt.StringValue()
+			} else if opt.Name == "ending-point" {
+				if opt.StringValue() == "end" {
+					untilPostID = interactionID
+				} else {
+					untilPostID = opt.StringValue()
+				}
 			}
 		}
 
-		if postID != "" {
+		if untilPostID != "" {
 			if reason != "" {
-				c.MultiEraseWithReason(i, interactionChannel, interactionID, interactionMember, postID, reason)
+				c.MultiEraseWithReason(i, interactionChannel, interactionID, interactionMember, startingPostID, untilPostID, reason)
 			} else {
-				c.MultiEraseNoReason(i, interactionChannel, interactionID, interactionMember, postID)
+				c.MultiEraseNoReason(i, interactionChannel, interactionID, interactionMember, startingPostID, untilPostID)
 			}
 		} else {
 			if reason != "" {
-				c.SingleEraseWithReason(i, interactionChannel, interactionID, interactionMember, reason)
+				c.SingleEraseWithReason(i, interactionChannel, interactionID, startingPostID, interactionMember, reason)
 			} else {
-				c.SingleEraseNoReason(i, interactionChannel, interactionID, interactionMember)
+				c.SingleEraseNoReason(i, interactionChannel, interactionID, startingPostID, interactionMember)
 			}
 		}
 
@@ -223,7 +242,7 @@ func (c *Commands) RegularCommandGroup(s *discordgo.Session, i *discordgo.Intera
 	}
 }
 
-func (c *Commands) SingleEraseNoReason(i *discordgo.InteractionCreate, interactionChannel *discordgo.Channel, interactionID string, interactionMember *discordgo.Member) {
+func (c *Commands) SingleEraseNoReason(i *discordgo.InteractionCreate, interactionChannel *discordgo.Channel, interactionID, startingPostID string, interactionMember *discordgo.Member) {
 
 	err := c.bot.Session.InteractionRespond(i.Interaction,
 		&discordgo.InteractionResponse{
@@ -235,21 +254,21 @@ func (c *Commands) SingleEraseNoReason(i *discordgo.InteractionCreate, interacti
 		c.bot.SendLog(msg.LogError, "Whilst responding to command erase (single):")
 		c.bot.SendLog(msg.LogError, err.Error())
 	} else {
-		deleteErr := c.DeleteSingleMessage(interactionChannel.ID, interactionID)
+		deleteErr := c.DeleteSingleMessage(interactionChannel.ID, interactionID, startingPostID)
 		if deleteErr != nil {
 			c.bot.SendLog(msg.LogError, "Whilst attempting to delete:")
 			logMessage := fmt.Sprintf("User %s | channel %s | %s", interactionMember.User.Username, interactionChannel.Name, deleteErr)
 			c.bot.SendLog(msg.LogError, logMessage)
 		} else {
-			logMessage := fmt.Sprintf("User %s | channel %s", interactionMember.User.Username, interactionChannel.Name)
+			logMessage := fmt.Sprintf("User %s | channel %s | quiet", interactionMember.User.Username, interactionChannel.Name)
 			c.bot.SendLog(msg.CommandErase, logMessage)
 		}
 	}
 }
 
-func (c *Commands) SingleEraseWithReason(i *discordgo.InteractionCreate, interactionChannel *discordgo.Channel, interactionID string, interactionMember *discordgo.Member, reason string) {
+func (c *Commands) SingleEraseWithReason(i *discordgo.InteractionCreate, interactionChannel *discordgo.Channel, interactionID, startingPostID string, interactionMember *discordgo.Member, reason string) {
 
-	deleteErr := c.DeleteSingleMessage(interactionChannel.ID, interactionID)
+	deleteErr := c.DeleteSingleMessage(interactionChannel.ID, interactionID, startingPostID)
 	if deleteErr != nil {
 		c.bot.SendLog(msg.LogError, "Whilst attempting to delete:")
 		logMessage := fmt.Sprintf("User %s | channel %s | %s", interactionMember.User.Username, interactionChannel.Name, deleteErr)
@@ -278,15 +297,15 @@ func (c *Commands) SingleEraseWithReason(i *discordgo.InteractionCreate, interac
 	}
 }
 
-func (c *Commands) MultiEraseNoReason(i *discordgo.InteractionCreate, interactionChannel *discordgo.Channel, interactionID string, interactionMember *discordgo.Member, eraseFromPostID string) {
+func (c *Commands) MultiEraseNoReason(i *discordgo.InteractionCreate, interactionChannel *discordgo.Channel, interactionID string, interactionMember *discordgo.Member, eraseFromStartingPostID, eraseUntilPostID string) {
 
-	deleteErr := c.DeleteMultipleMessages(eraseFromPostID, interactionChannel.ID, interactionID)
+	deleteErr := c.DeleteMultipleMessages(eraseFromStartingPostID, eraseUntilPostID, interactionChannel.ID)
 	if deleteErr != nil {
 		logMessage := fmt.Sprintf("User %s | channel %s | %s", interactionMember.User.Username, interactionChannel.Name, deleteErr)
 		c.bot.SendLog(msg.LogError, "Whilst attempting to delete:")
 		c.bot.SendLog(msg.LogError, logMessage)
 	} else {
-		logMessage := fmt.Sprintf("User %s | channel %s", interactionMember.User.Username, interactionChannel.Name)
+		logMessage := fmt.Sprintf("User %s | channel %s | quiet", interactionMember.User.Username, interactionChannel.Name)
 		c.bot.SendLog(msg.CommandErase, logMessage)
 	}
 
@@ -306,9 +325,9 @@ func (c *Commands) MultiEraseNoReason(i *discordgo.InteractionCreate, interactio
 	}
 }
 
-func (c *Commands) MultiEraseWithReason(i *discordgo.InteractionCreate, interactionChannel *discordgo.Channel, interactionID string, interactionMember *discordgo.Member, eraseFromPostID, reason string) {
+func (c *Commands) MultiEraseWithReason(i *discordgo.InteractionCreate, interactionChannel *discordgo.Channel, interactionID string, interactionMember *discordgo.Member, eraseFromStartingPostID, eraseUntilPostID, reason string) {
 
-	deleteErr := c.DeleteMultipleMessages(eraseFromPostID, interactionChannel.ID, interactionID)
+	deleteErr := c.DeleteMultipleMessages(eraseFromStartingPostID, eraseUntilPostID, interactionChannel.ID)
 	if deleteErr != nil {
 		logMessage := fmt.Sprintf("User %s | channel %s | %s", interactionMember.User.Username, interactionChannel.Name, deleteErr)
 		c.bot.SendLog(msg.LogError, "Whilst attempting to delete:")
@@ -336,20 +355,14 @@ func (c *Commands) MultiEraseWithReason(i *discordgo.InteractionCreate, interact
 	}
 }
 
-func (c *Commands) DeleteSingleMessage(channel string, messageID string) error {
+func (c *Commands) DeleteSingleMessage(channel, messageID, targetMessageID string) error {
 
-	messages, err := c.bot.Session.ChannelMessages(channel, 1, messageID, "", "")
-	if err != nil {
-		return err
-	}
 	var messageIDs []string
 
-	for _, m := range messages {
-		messageIDs = append(messageIDs, m.ID)
-	}
 	messageIDs = append(messageIDs, messageID)
+	messageIDs = append(messageIDs, targetMessageID)
 
-	err = c.bot.Session.ChannelMessagesBulkDelete(channel, messageIDs)
+	err := c.bot.Session.ChannelMessagesBulkDelete(channel, messageIDs)
 	if err != nil {
 		return err
 	}
@@ -357,18 +370,22 @@ func (c *Commands) DeleteSingleMessage(channel string, messageID string) error {
 	return nil
 }
 
-func (c *Commands) DeleteMultipleMessages(eraseFromPostID, channel string, messageID string) error {
+func (c *Commands) DeleteMultipleMessages(eraseFromStartingPostID, eraseUntilPostID, channel string) error {
 
-	messages, err := c.bot.Session.ChannelMessages(channel, 100, messageID, eraseFromPostID, "")
+	messages, err := c.bot.Session.ChannelMessages(channel, 100, "", eraseFromStartingPostID, "")
 	if err != nil {
 		return err
 	}
-	messageIDs := []string{eraseFromPostID}
+	messageIDs := []string{}
 
-	for _, m := range messages {
+	for i := len(messages) - 1; i > 0; i-- {
+		m := messages[i]
 		messageIDs = append(messageIDs, m.ID)
+		if m.ID == eraseUntilPostID {
+			break
+		}
 	}
-	messageIDs = append(messageIDs, messageID)
+	messageIDs = append(messageIDs, eraseFromStartingPostID)
 
 	err = c.bot.Session.ChannelMessagesBulkDelete(channel, messageIDs)
 	if err != nil {
