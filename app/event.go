@@ -28,10 +28,9 @@ func (e *Events) onNewMember(s *discordgo.Session, memberJoinEvent *discordgo.Gu
 
 	greeting := msg.Opening.GetRandom()
 	suggestion := msg.Suggestion.GetRandom()
-	secondSuggestion := msg.Suggestion.GetRandom()
 	closing := msg.Closing.GetRandom()
 
-	botWelcomeScript := fmt.Sprintf("%s, %s! %s introduce yourself, tell us your coding story.\n %s check out the react-for-roles channel and let us know where you're based!\n %s", greeting, memberJoinEvent.Mention(), suggestion, secondSuggestion, closing)
+	botWelcomeScript := fmt.Sprintf("%s, %s! Welcome to FCC Korea's discord server!\n**You'll need to introduce yourself here to complete your verification and get access to the full server :)**\nWe'd love to get to know you and find out where you are on your coding journey!\nOnce you're verified, %s check out the react-for-roles channel and let us know where you're based!\n %s", greeting, memberJoinEvent.Mention(), suggestion, closing)
 
 	e.bot.Session.ChannelMessageSend(e.bot.Cfg.server.intros, botWelcomeScript)
 	e.bot.SendLog(msg.LogNewMember, fmt.Sprintf("%s (%s) joined the server", memberJoinEvent.Member.Nick, memberJoinEvent.User.Username))
