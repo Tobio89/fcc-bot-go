@@ -130,7 +130,9 @@ func (b *Bot) Start() {
 
 // Send a message to the log channel
 func (b *Bot) SendLog(logPrefix, logMessage string) {
-	t := time.Now()
+
+	loc, _ := time.LoadLocation("Asia/Seoul")
+	t := time.Now().In(loc)
 	formattedTime := fmt.Sprintf("[%d/%02d/%02d T%02d:%02d:%02d]",
 		t.Year(), t.Month(), t.Day(),
 		t.Hour(), t.Minute(), t.Second())
