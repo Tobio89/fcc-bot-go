@@ -33,7 +33,7 @@ func (e *Events) onNewMember(s *discordgo.Session, memberJoinEvent *discordgo.Gu
 	botWelcomeScript := fmt.Sprintf("%s, %s! Welcome to FCC Korea's discord server!\n**You'll need to introduce yourself here to complete your verification and get access to the full server :)**\nWe'd love to get to know you and find out where you are on your coding journey!\nOnce you're verified, %s check out the react-for-roles channel and let us know where you're based!\n %s", greeting, memberJoinEvent.Mention(), suggestion, closing)
 
 	e.bot.Session.ChannelMessageSend(e.bot.Cfg.server.intros, botWelcomeScript)
-	e.bot.SendLog(msg.LogNewMember, fmt.Sprintf("%s (%s) joined the server", memberJoinEvent.Member.Nick, memberJoinEvent.User.Username))
+	e.bot.SendLog(msg.LogNewMember, fmt.Sprintf("User {nick \"%s\", username \"%s\"} joined the server", memberJoinEvent.Member.Nick, memberJoinEvent.User.Username))
 }
 
 func (e *Events) onMessageSent(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -74,7 +74,7 @@ func (e *Events) handleIntroductionVerification(m *discordgo.MessageCreate) {
 	}
 
 	e.bot.Session.GuildMemberRoleAdd(e.bot.Cfg.server.guild, member.User.ID, e.bot.Cfg.roles.verified)
-	e.bot.SendLog(msg.LogVerification, fmt.Sprintf("User %s (%s) became verified", member.Nick, member.User.Username))
+	e.bot.SendLog(msg.LogVerification, fmt.Sprintf("User {nick \"%s\", username \"%s\"} became verified", member.Nick, member.User.Username))
 }
 
 func (e *Events) parseReactionAdded(m *discordgo.MessageReactionAdd) {
@@ -145,7 +145,7 @@ func (e *Events) rfrAdd(member *discordgo.Member, emojiUsed string) {
 			}
 		}
 		e.bot.Session.GuildMemberRoleAdd(e.bot.Cfg.server.guild, member.User.ID, role.ID)
-		e.bot.SendLog(msg.LogRFR, fmt.Sprintf("User %s (%s) receives role %s", member.Nick, member.User.Username, RFRRoleSelected))
+		e.bot.SendLog(msg.LogRFR, fmt.Sprintf("User {nick \"%s\", username \"%s\"} receives role %s", member.Nick, member.User.Username, RFRRoleSelected))
 	}
 }
 
@@ -180,7 +180,7 @@ func (e *Events) rfrRemove(member *discordgo.Member, emojiUsed string) {
 				e.bot.SendLog(msg.LogError, err.Error())
 				return
 			}
-			e.bot.SendLog(msg.LogRFR, fmt.Sprintf("User %s (%s) loses role %s", member.Nick, member.User.Username, RFRRoleSelected))
+			e.bot.SendLog(msg.LogRFR, fmt.Sprintf("User {nick \"%s\", username \"%s\"} loses role %s", member.Nick, member.User.Username, RFRRoleSelected))
 		}
 	}
 }
@@ -201,7 +201,7 @@ func (e *Events) onlineChatRoleAdd(member *discordgo.Member) {
 		e.bot.SendLog(msg.LogError, "Whilst adding Gather role:")
 		e.bot.SendLog(msg.LogError, err.Error())
 	} else {
-		e.bot.SendLog(msg.LogRFR, fmt.Sprintf("User %s (%s) subscribes to Gather updates", member.Nick, member.User.Username))
+		e.bot.SendLog(msg.LogRFR, fmt.Sprintf("User {nick \"%s\", username \"%s\"} subscribes to Gather updates", member.Nick, member.User.Username))
 	}
 }
 
@@ -227,7 +227,7 @@ func (e *Events) onlineChatRoleRemove(member *discordgo.Member) {
 		e.bot.SendLog(msg.LogError, err.Error())
 		return
 	}
-	e.bot.SendLog(msg.LogRFR, fmt.Sprintf("User %s (%s) unsubscribes from Gather updates", member.Nick, member.User.Username))
+	e.bot.SendLog(msg.LogRFR, fmt.Sprintf("User {nick \"%s\", username \"%s\"} unsubscribes from Gather updates", member.Nick, member.User.Username))
 }
 
 func (e *Events) learningResourcePost(m *discordgo.MessageReactionAdd, learningDiscussionChannel *discordgo.Channel, learningResourcesChannel *discordgo.Channel) {

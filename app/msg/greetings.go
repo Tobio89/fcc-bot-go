@@ -23,6 +23,7 @@ const (
 	LogVerification string = "[Verified]  "
 	LogError        string = "[ERROR]     "
 	LogLearning     string = "[Learning]  "
+	LogShutdown     string = "[Shutdown]  "
 )
 
 const (

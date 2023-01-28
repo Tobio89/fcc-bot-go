@@ -111,6 +111,8 @@ func main() {
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
 
+	// Report shutdown
+	fccbot.SendLog(msg.LogShutdown, "Bot was shut down")
 	// Cleanly close down the Discord session.
 	fccbot.Session.Close()
 
