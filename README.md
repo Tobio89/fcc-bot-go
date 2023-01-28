@@ -11,6 +11,14 @@ Its primary library is [discordgo](https://github.com/bwmarrin/discordgo).
 
 ---
 
+The instructions for this bot assume you already have a bot set up in the discord developer portal, and it is already invited to a server.
+
+For development purposes, it is recommended to set up a new, private server that mirrors the structure of your production server.
+
+If you are intending to fork FCCBot to use in your own server, understand that whilst FCCBot is built with some level of modularity in mind, it will require work to reshape it to fit your own needs.
+
+---
+
 ## **Getting Started**
 
 
@@ -24,7 +32,8 @@ Its primary library is [discordgo](https://github.com/bwmarrin/discordgo).
 
 #### **Environment Variables**
 
-You will need to create .env files before running the bot.
+You will need to create .env files before running the bot: `dev.env` and `prod.env`.
+>**_NOTE:_** Running the bot in dev or prod mode does not require the other .env file.
 
 | **env variable**            | **how to obtain**                                                                   |
 |---------------------------|------------------------------------------------------------------------------------|
