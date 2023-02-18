@@ -29,4 +29,5 @@ const (
 const (
 	CommandErase    string = "<Erase>     "
 	CommandForceLog string = "<Force Log> "
+	CommandRemind   string = "<Remind   > "
 )

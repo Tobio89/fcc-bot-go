@@ -127,3 +127,10 @@ func (u *Utils) MemberHasPermission(userID string, permission int64) (bool, erro
 func (u *Utils) IsUserAdmin(userID string) (bool, error) {
 	return u.MemberHasPermission(userID, discordgo.PermissionAdministrator)
 }
+
+func (u *Utils) GetMemberNickOrUsername(user discordgo.Member) string {
+	if user.Nick != "" {
+		return user.Nick
+	}
+	return user.User.Username
+}

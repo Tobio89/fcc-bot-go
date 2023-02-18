@@ -46,6 +46,12 @@ func (c *Commands) create() {
 		allSuccessful = false
 	}
 
+	if _, err := c.bot.Session.ApplicationCommandCreate(c.bot.Cfg.bot.id, c.bot.Cfg.server.guild, RemindCommand); err != nil {
+		c.bot.SendLog(msg.LogError, "Whilst adding remind command:")
+		c.bot.SendLog(msg.LogError, err.Error())
+		allSuccessful = false
+	}
+
 	if allSuccessful {
 		c.bot.SendLog(msg.LogOnReady, "All commands successfully added")
 	}
@@ -127,6 +133,29 @@ var LearningResourceCommand = &discordgo.ApplicationCommand{
 		},
 	},
 }
+var RemindCommand = &discordgo.ApplicationCommand{
+	Name:        "remind",
+	Type:        discordgo.ChatApplicationCommand,
+	Description: "Post a reminder of how to do something:",
+	Options: []*discordgo.ApplicationCommandOption{
+		{
+			Name:        "topic",
+			Type:        discordgo.ApplicationCommandOptionString,
+			Description: "what to remind the user of",
+			Required:    true,
+			Choices: []*discordgo.ApplicationCommandOptionChoice{
+				{
+					Name:  "learning",
+					Value: "learning",
+				},
+				{
+					Name:  "nickname",
+					Value: "nickname",
+				},
+			},
+		},
+	},
+}
 
 func (c *Commands) AdminCommandGroup(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if i.Type != discordgo.InteractionApplicationCommand {
@@ -201,6 +230,58 @@ func (c *Commands) AdminCommandGroup(s *discordgo.Session, i *discordgo.Interact
 			logString := options[0].StringValue()
 			c.bot.SendLog(msg.CommandForceLog, fmt.Sprintf("By User %s: %s", interactionMember.User.Username, logString))
 		}
+
+	case "remind":
+		switch options[0].StringValue() {
+		case "nickname":
+			{
+				response := fmt.Sprintf("From  %s <3", interactionMember.Mention())
+				c.bot.Session.ChannelMessageSend(interactionChannel.ID, response)
+				response = "Check out this post to find out how to change your nickname!:\nhttps://discord.com/channels/726648668907765842/770532252768927745/955293674152009748"
+				c.bot.Session.ChannelMessageSend(interactionChannel.ID, response)
+				c.bot.SendLog(msg.CommandRemind, fmt.Sprintf("User %s requested reminder '%s'", c.bot.Utils.GetMemberNickOrUsername(*interactionMember), options[0].StringValue()))
+
+				if err := s.InteractionRespond(i.Interaction,
+					&discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{Content: "Remind command successful", Flags: 1 << 6},
+					}); err != nil {
+					c.bot.SendLog(msg.LogError, "Whilst responding to command remind:")
+					c.bot.SendLog(msg.LogError, err.Error())
+				}
+
+			}
+		case "learning":
+			{
+				response := fmt.Sprintf("From  %s <3", interactionMember.Mention())
+				c.bot.Session.ChannelMessageSend(interactionChannel.ID, response)
+				response = "Type `/learning-resource` to make a post to the #learning-resources channel!\nYou'll need to add the URL of the resource, and a description of it."
+				c.bot.Session.ChannelMessageSend(interactionChannel.ID, response)
+				c.bot.SendLog(msg.CommandRemind, fmt.Sprintf("User %v requested reminder '%s'", c.bot.Utils.GetMemberNickOrUsername(*interactionMember), options[0].StringValue()))
+
+				if err := s.InteractionRespond(i.Interaction,
+					&discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{Content: "Remind command successful", Flags: 1 << 6},
+					}); err != nil {
+					c.bot.SendLog(msg.LogError, "Whilst responding to command remind:")
+					c.bot.SendLog(msg.LogError, err.Error())
+				}
+
+			}
+		default:
+			c.bot.SendLog(msg.LogError, fmt.Sprintf("User %v requested reminder '%s'", c.bot.Utils.GetMemberNickOrUsername(*interactionMember), options[0].StringValue()))
+			if err := s.InteractionRespond(i.Interaction,
+				&discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{Content: "That reminder topic doesn't exist!", Flags: 1 << 6},
+				}); err != nil {
+				c.bot.SendLog(msg.LogError, "Whilst responding to command remind:")
+				c.bot.SendLog(msg.LogError, err.Error())
+			}
+
+		}
+
 	}
 }
 
@@ -215,7 +296,6 @@ func (c *Commands) RegularCommandGroup(s *discordgo.Session, i *discordgo.Intera
 
 	switch data.Name {
 	case "learning-resource":
-
 		resourceUrl := options[0].StringValue()
 		resourceDescription := options[1].StringValue()
 
