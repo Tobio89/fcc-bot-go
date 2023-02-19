@@ -74,7 +74,7 @@ func (u *Utils) UserHasRoleByRoleName(member *discordgo.Member, roleToFind strin
 }
 
 // Return boolean: does user have role, from role's ID string
-func (u *Utils) UserHasRoleByRoleID(member *discordgo.Member, roleToFind string) (bool, error) {
+func (u *Utils) MemberHasRoleByRoleID(member *discordgo.Member, roleToFind string) (bool, error) {
 
 	for _, userExistingRoleID := range member.Roles {
 		if userExistingRoleID == roleToFind {
@@ -128,9 +128,19 @@ func (u *Utils) IsUserAdmin(userID string) (bool, error) {
 	return u.MemberHasPermission(userID, discordgo.PermissionAdministrator)
 }
 
-func (u *Utils) GetMemberNickOrUsername(user discordgo.Member) string {
-	if user.Nick != "" {
-		return user.Nick
+func (u *Utils) GetMemberNickOrUsername(member discordgo.Member) string {
+	if member.Nick != "" {
+		return member.Nick
 	}
-	return user.User.Username
+	return member.User.Username
+}
+
+func (u *Utils) GetUserNickOrUsername(user *discordgo.User) string {
+
+	member, _ := u.GetMemberByID(user.ID)
+
+	if member.Nick != "" {
+		return member.Nick
+	}
+	return member.User.Username
 }

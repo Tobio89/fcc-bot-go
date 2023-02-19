@@ -52,6 +52,18 @@ func (c *Commands) create() {
 		allSuccessful = false
 	}
 
+	if _, err := c.bot.Session.ApplicationCommandCreate(c.bot.Cfg.bot.id, c.bot.Cfg.server.guild, VerifyCommand); err != nil {
+		c.bot.SendLog(msg.LogError, "Whilst adding verify command:")
+		c.bot.SendLog(msg.LogError, err.Error())
+		allSuccessful = false
+	}
+
+	if _, err := c.bot.Session.ApplicationCommandCreate(c.bot.Cfg.bot.id, c.bot.Cfg.server.guild, DeVerifyCommand); err != nil {
+		c.bot.SendLog(msg.LogError, "Whilst adding DeVerify command:")
+		c.bot.SendLog(msg.LogError, err.Error())
+		allSuccessful = false
+	}
+
 	if allSuccessful {
 		c.bot.SendLog(msg.LogOnReady, "All commands successfully added")
 	}
@@ -81,6 +93,7 @@ var EraseCommand = &discordgo.ApplicationCommand{
 		},
 	},
 }
+
 var StealthEraseCommand = &discordgo.ApplicationCommand{
 	Name:        "erase-quietly",
 	Type:        discordgo.ChatApplicationCommand,
@@ -133,6 +146,7 @@ var LearningResourceCommand = &discordgo.ApplicationCommand{
 		},
 	},
 }
+
 var RemindCommand = &discordgo.ApplicationCommand{
 	Name:        "remind",
 	Type:        discordgo.ChatApplicationCommand,
@@ -153,6 +167,33 @@ var RemindCommand = &discordgo.ApplicationCommand{
 					Value: "nickname",
 				},
 			},
+		},
+	},
+}
+var VerifyCommand = &discordgo.ApplicationCommand{
+	Name:        "verify",
+	Type:        discordgo.ChatApplicationCommand,
+	Description: "Manually add verified role to user:",
+	Options: []*discordgo.ApplicationCommandOption{
+		{
+			Name:        "user",
+			Type:        discordgo.ApplicationCommandOptionUser,
+			Description: "who to verify",
+			Required:    true,
+		},
+	},
+}
+
+var DeVerifyCommand = &discordgo.ApplicationCommand{
+	Name:        "deverify",
+	Type:        discordgo.ChatApplicationCommand,
+	Description: "Manually remove verified role from user:",
+	Options: []*discordgo.ApplicationCommandOption{
+		{
+			Name:        "user",
+			Type:        discordgo.ApplicationCommandOptionUser,
+			Description: "who to de-verify",
+			Required:    true,
 		},
 	},
 }
@@ -282,6 +323,15 @@ func (c *Commands) AdminCommandGroup(s *discordgo.Session, i *discordgo.Interact
 
 		}
 
+	case "verify":
+		{
+			c.ManualVerify(i, options[0].UserValue(c.bot.Session))
+		}
+
+	case "deverify":
+		{
+			c.ManualDeVerify(i, options[0].UserValue(c.bot.Session))
+		}
 	}
 }
 
@@ -473,4 +523,100 @@ func (c *Commands) DeleteMultipleMessages(eraseFromStartingPostID, eraseUntilPos
 	}
 
 	return nil
+}
+
+func (c *Commands) ManualVerify(i *discordgo.InteractionCreate, user *discordgo.User) {
+
+	var responseContent string
+	var userNick string = c.bot.Utils.GetUserNickOrUsername(user)
+
+	// Get member from server's member list
+	member, err := c.bot.Utils.GetMemberByID(user.ID)
+	if err != nil {
+		c.bot.SendLog(msg.LogError, "Whilst attempting manual verification:")
+		c.bot.SendLog(msg.LogError, err.Error())
+		responseContent = fmt.Sprintf("Failed to get member %s: have they left?", userNick)
+
+		c.bot.Session.InteractionRespond(i.Interaction,
+			&discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{Content: responseContent,
+					Flags: 1 << 6},
+			})
+		return
+	}
+	// Check if they have the role already
+	if hasRole, err := c.bot.Utils.MemberHasRoleByRoleID(member, c.bot.Cfg.roles.verified); err != nil || hasRole {
+		responseContent = fmt.Sprintf("User %s is already verified", userNick)
+		c.bot.SendLog(msg.CommandVerify, responseContent)
+
+		c.bot.Session.InteractionRespond(i.Interaction,
+			&discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{Content: responseContent,
+					Flags: 1 << 6},
+			})
+		return
+	}
+
+	c.bot.Session.GuildMemberRoleAdd(c.bot.Cfg.server.guild, member.User.ID, c.bot.Cfg.roles.verified)
+	c.bot.SendLog(msg.CommandVerify, fmt.Sprintf("User %s became verified manually", userNick))
+
+	if err := c.bot.Session.InteractionRespond(i.Interaction,
+		&discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{Content: fmt.Sprintf("User %s verified", userNick),
+				Flags: 1 << 6},
+		}); err != nil {
+		c.bot.SendLog(msg.LogError, "Whilst responding to command erase (single):")
+		c.bot.SendLog(msg.LogError, err.Error())
+	}
+}
+
+func (c *Commands) ManualDeVerify(i *discordgo.InteractionCreate, user *discordgo.User) {
+
+	var responseContent string
+	var userNick string = c.bot.Utils.GetUserNickOrUsername(user)
+
+	// Get member from server's member list
+	member, err := c.bot.Utils.GetMemberByID(user.ID)
+	if err != nil {
+		c.bot.SendLog(msg.LogError, "Whilst attempting manual de-verification:")
+		c.bot.SendLog(msg.LogError, err.Error())
+		responseContent = fmt.Sprintf("Failed to get member %s: have they left?", userNick)
+
+		c.bot.Session.InteractionRespond(i.Interaction,
+			&discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{Content: responseContent,
+					Flags: 1 << 6},
+			})
+		return
+	}
+	// Check if they have the role already
+	if hasRole, err := c.bot.Utils.MemberHasRoleByRoleID(member, c.bot.Cfg.roles.verified); err != nil || !hasRole {
+		responseContent = fmt.Sprintf("User %s is already not verified", userNick)
+		c.bot.SendLog(msg.CommandDeVerify, fmt.Sprintf("User %s is already not verified", userNick))
+
+		c.bot.Session.InteractionRespond(i.Interaction,
+			&discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{Content: responseContent,
+					Flags: 1 << 6},
+			})
+		return
+	}
+
+	c.bot.Session.GuildMemberRoleRemove(c.bot.Cfg.server.guild, member.User.ID, c.bot.Cfg.roles.verified)
+	c.bot.SendLog(msg.CommandDeVerify, fmt.Sprintf("User %s became de-verified", userNick))
+
+	if err := c.bot.Session.InteractionRespond(i.Interaction,
+		&discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{Content: fmt.Sprintf("User %s de-verified", userNick),
+				Flags: 1 << 6},
+		}); err != nil {
+		c.bot.SendLog(msg.LogError, "Whilst responding to command de-verify:")
+		c.bot.SendLog(msg.LogError, err.Error())
+	}
 }
