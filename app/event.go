@@ -69,7 +69,7 @@ func (e *Events) handleIntroductionVerification(m *discordgo.MessageCreate) {
 		return
 	}
 
-	if hasRole, err := e.bot.Utils.UserHasRoleByRoleID(member, e.bot.Cfg.roles.verified); err != nil || hasRole {
+	if hasRole, err := e.bot.Utils.MemberHasRoleByRoleID(member, e.bot.Cfg.roles.verified); err != nil || hasRole {
 		return
 	}
 
