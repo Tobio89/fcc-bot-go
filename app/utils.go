@@ -144,3 +144,12 @@ func (u *Utils) GetUserNickOrUsername(user *discordgo.User) string {
 	}
 	return member.User.Username
 }
+
+func (u *Utils) MakeUserNickLogString(user *discordgo.User) string {
+	member, _ := u.GetMemberByID(user.ID)
+
+	if member.Nick != "" {
+		return member.Nick + " (n)"
+	}
+	return member.User.Username + " (u)"
+}

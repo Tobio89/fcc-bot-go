@@ -33,7 +33,9 @@ func (e *Events) onNewMember(s *discordgo.Session, memberJoinEvent *discordgo.Gu
 	botWelcomeScript := fmt.Sprintf("%s, %s! Welcome to FCC Korea's discord server!\n*You'll need to introduce yourself here to complete your verification and get access to the full server :)*\n*여기서 자기소개하면 사용자 검증을 완료 될 겁니다*\nWe'd love to get to know you and find out where you are on your coding journey!\nOnce you're verified, %s check out the react-for-roles channel and let us know where you're based!\n%s", greeting, memberJoinEvent.Mention(), suggestion, closing)
 
 	e.bot.Session.ChannelMessageSend(e.bot.Cfg.server.intros, botWelcomeScript)
-	e.bot.SendLog(msg.LogNewMember, fmt.Sprintf("User {nick \"%s\", username \"%s\"} joined the server", memberJoinEvent.Member.Nick, memberJoinEvent.User.Username))
+
+	userNick := e.bot.Utils.MakeUserNickLogString(memberJoinEvent.User)
+	e.bot.SendLog(msg.LogNewMember, fmt.Sprintf("User %s joined the server", userNick))
 }
 
 func (e *Events) onMessageSent(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -74,7 +76,9 @@ func (e *Events) handleIntroductionVerification(m *discordgo.MessageCreate) {
 	}
 
 	e.bot.Session.GuildMemberRoleAdd(e.bot.Cfg.server.guild, member.User.ID, e.bot.Cfg.roles.verified)
-	e.bot.SendLog(msg.LogVerification, fmt.Sprintf("User {nick \"%s\", username \"%s\"} became verified", member.Nick, member.User.Username))
+
+	userNick := e.bot.Utils.MakeUserNickLogString(member.User)
+	e.bot.SendLog(msg.LogNewMember, fmt.Sprintf("User %s became verified", userNick))
 }
 
 func (e *Events) parseReactionAdded(m *discordgo.MessageReactionAdd) {
@@ -150,7 +154,9 @@ func (e *Events) rfrAdd(member *discordgo.Member, emojiUsed string) {
 			}
 		}
 		e.bot.Session.GuildMemberRoleAdd(e.bot.Cfg.server.guild, member.User.ID, role.ID)
-		e.bot.SendLog(msg.LogRFR, fmt.Sprintf("User {nick \"%s\", username \"%s\"} receives role %s", member.Nick, member.User.Username, RFRRoleSelected))
+
+		userNick := e.bot.Utils.MakeUserNickLogString(member.User)
+		e.bot.SendLog(msg.LogNewMember, fmt.Sprintf("User %s gains role %s", userNick, RFRRoleSelected))
 	}
 }
 
@@ -185,7 +191,9 @@ func (e *Events) rfrRemove(member *discordgo.Member, emojiUsed string) {
 				e.bot.SendLog(msg.LogError, err.Error())
 				return
 			}
-			e.bot.SendLog(msg.LogRFR, fmt.Sprintf("User {nick \"%s\", username \"%s\"} loses role %s", member.Nick, member.User.Username, RFRRoleSelected))
+
+			userNick := e.bot.Utils.MakeUserNickLogString(member.User)
+			e.bot.SendLog(msg.LogNewMember, fmt.Sprintf("User %s loses role %s", userNick, RFRRoleSelected))
 		}
 	}
 }
@@ -206,7 +214,9 @@ func (e *Events) onlineChatRoleAdd(member *discordgo.Member) {
 		e.bot.SendLog(msg.LogError, "Whilst adding Gather role:")
 		e.bot.SendLog(msg.LogError, err.Error())
 	} else {
-		e.bot.SendLog(msg.LogRFR, fmt.Sprintf("User {nick \"%s\", username \"%s\"} subscribes to Gather updates", member.Nick, member.User.Username))
+
+		userNick := e.bot.Utils.MakeUserNickLogString(member.User)
+		e.bot.SendLog(msg.LogNewMember, fmt.Sprintf("User %s subscribes to Online Meetup updates", userNick))
 	}
 }
 
@@ -232,7 +242,8 @@ func (e *Events) onlineChatRoleRemove(member *discordgo.Member) {
 		e.bot.SendLog(msg.LogError, err.Error())
 		return
 	}
-	e.bot.SendLog(msg.LogRFR, fmt.Sprintf("User {nick \"%s\", username \"%s\"} unsubscribes from Gather updates", member.Nick, member.User.Username))
+	userNick := e.bot.Utils.MakeUserNickLogString(member.User)
+	e.bot.SendLog(msg.LogNewMember, fmt.Sprintf("User %s unsubscribes from Online Meetup updates", userNick))
 }
 
 func (e *Events) learningResourcePost(m *discordgo.MessageReactionAdd, learningDiscussionChannel *discordgo.Channel, learningResourcesChannel *discordgo.Channel) {
@@ -253,7 +264,9 @@ func (e *Events) learningResourcePost(m *discordgo.MessageReactionAdd, learningD
 		messageContents := fmt.Sprintf("%s\nThanks, %s, who posted this resource: \n"+message.Content, e.makeMessageLink(message.Reference()), message.Author.Mention())
 		e.bot.Session.ChannelMessageSend(learningResourcesChannel.ID, messageContents)
 		e.bot.Session.MessageReactionAdd(learningDiscussionChannel.ID, message.ID, BotProcessedEmoji)
-		e.bot.SendLog(msg.LogLearning, fmt.Sprintf("%s's (%s) post was added to Learning Resources", m.Member.Nick, m.Member.User.Username))
+
+		userNick := e.bot.Utils.MakeUserNickLogString(m.Member.User)
+		e.bot.SendLog(msg.LogNewMember, fmt.Sprintf("User %s's post was added to Learning Resources", userNick))
 	}
 }
 
