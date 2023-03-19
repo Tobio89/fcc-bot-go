@@ -98,7 +98,7 @@ func (e *Events) parseReactionAdded(m *discordgo.MessageReactionAdd) {
 
 	// If the reaction was on the RFR Post:
 	if m.MessageID == e.bot.Cfg.server.rfr {
-		if emojiUsed == GatherEmoji {
+		if emojiUsed == OnlineMeetupEmoji {
 			e.onlineChatRoleAdd(member)
 		} else {
 			e.rfrAdd(member, emojiUsed)
@@ -127,7 +127,7 @@ func (e *Events) parseReactionRemoved(m *discordgo.MessageReactionRemove) {
 
 	// If the reaction was on the RFR Post:
 	if m.MessageID == e.bot.Cfg.server.rfr {
-		if emojiUsed == GatherEmoji {
+		if emojiUsed == OnlineMeetupEmoji {
 			e.onlineChatRoleRemove(member)
 		} else {
 			e.rfrRemove(member, emojiUsed)
@@ -137,10 +137,12 @@ func (e *Events) parseReactionRemoved(m *discordgo.MessageReactionRemove) {
 
 func (e *Events) rfrAdd(member *discordgo.Member, emojiUsed string) {
 
+	userNick := e.bot.Utils.MakeUserNickLogString(member.User)
+
 	//If the role matches one of the RFR roles
 	if RFRRoleSelected, exists := RFRMap[emojiUsed]; exists {
 
-		role, err := e.bot.Utils.GetRoleByName(RFRRoleSelected)
+		role, err := e.bot.Utils.GetRoleByID(RFRRoleSelected)
 		if err != nil {
 			e.bot.SendLog(msg.LogError, "Whilst parsing reaction add, getting role:")
 			e.bot.SendLog(msg.LogError, err.Error())
@@ -157,6 +159,8 @@ func (e *Events) rfrAdd(member *discordgo.Member, emojiUsed string) {
 
 		userNick := e.bot.Utils.MakeUserNickLogString(member.User)
 		e.bot.SendLog(msg.LogNewMember, fmt.Sprintf("User %s gains role %s", userNick, RFRRoleSelected))
+	} else {
+		e.bot.SendLog(msg.LogError, fmt.Sprintf("User %s used rando emoji: %s", userNick, emojiUsed))
 	}
 }
 
@@ -167,7 +171,7 @@ func (e *Events) rfrRemove(member *discordgo.Member, emojiUsed string) {
 	if RFRRoleSelected, exists := RFRMap[emojiUsed]; exists {
 
 		// Get full role object for RFR role used
-		role, err := e.bot.Utils.GetRoleByName(RFRRoleSelected)
+		role, err := e.bot.Utils.GetRoleByID(RFRRoleSelected)
 		if err != nil {
 			e.bot.SendLog(msg.LogError, "Whilst parsing reaction remove, getting role:")
 			e.bot.SendLog(msg.LogError, err.Error())
@@ -200,7 +204,7 @@ func (e *Events) rfrRemove(member *discordgo.Member, emojiUsed string) {
 
 func (e *Events) onlineChatRoleAdd(member *discordgo.Member) {
 
-	OnlineChatSubscriptionRole, _ := e.bot.Utils.GetRoleByName(GatherRoleName)
+	OnlineChatSubscriptionRole, _ := e.bot.Utils.GetRoleByID(OnlineMeetupRoleID)
 
 	for _, userExistingRoleID := range member.Roles {
 		if userExistingRoleID == OnlineChatSubscriptionRole.ID {
@@ -222,7 +226,7 @@ func (e *Events) onlineChatRoleAdd(member *discordgo.Member) {
 
 func (e *Events) onlineChatRoleRemove(member *discordgo.Member) {
 
-	OnlineChatSubscriptionRole, _ := e.bot.Utils.GetRoleByName(GatherRoleName)
+	OnlineChatSubscriptionRole, _ := e.bot.Utils.GetRoleByID(OnlineMeetupRoleID)
 
 	shouldRemove := false
 	for _, userExistingRoleID := range member.Roles {
@@ -291,24 +295,24 @@ func (e *Events) makeMessageLink(reference *discordgo.MessageReference) string {
 }
 
 var RFRMap = map[string]string{
-	"💺": "Seoul-Based",
-	"💗": "Ulsan-Based",
-	"🚌": "Busan-Based",
-	"🌄": "Overseas-Based",
+	"💺": "734321889585004595",
+	"💗": "734321831095435315",
+	"🚌": "781398242877112322",
+	"🌄": "872308863548923974",
 }
 
 var RFRRoles = []string{
-	"Seoul-Based",
-	"Ulsan-Based",
-	"Busan-Based",
-	"Overseas-Based",
+	"Seoul",
+	"Ulsan",
+	"Busan",
+	"Overseas",
 }
 
 const BotProcessedEmoji = "✅"
 const LearningEmoji = "💡"
 
-const GatherEmoji = "🍇"
-const GatherRoleName = "Gather-Attendees"
+const OnlineMeetupEmoji = "🍇"
+const OnlineMeetupRoleID = "933240244596256808"
 
 var CollabRoleMap = map[string]string{
 	"project-shelf": "Project Shelf Collaborator",
