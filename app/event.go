@@ -78,14 +78,19 @@ func (e *Events) handleIntroductionVerification(m *discordgo.MessageCreate) {
 }
 
 func (e *Events) parseReactionAdded(m *discordgo.MessageReactionAdd) {
-	emojiUsed := m.Emoji.MessageFormat()
-
 	member, err := e.bot.Utils.GetMemberByID(m.UserID)
 	if err != nil {
 		e.bot.SendLog(msg.LogError, "Whilst parsing reaction add:")
 		e.bot.SendLog(msg.LogError, err.Error())
 		return
 	}
+
+	// Only verified users can use this feature
+	if isVerified, _ := e.bot.Utils.MemberHasRoleByRoleID(member, e.bot.Cfg.roles.verified); !isVerified {
+		return
+	}
+
+	emojiUsed := m.Emoji.MessageFormat()
 
 	// If the reaction was on the RFR Post:
 	if m.MessageID == e.bot.Cfg.server.rfr {
