@@ -78,7 +78,7 @@ func (e *Events) handleIntroductionVerification(m *discordgo.MessageCreate) {
 	e.bot.Session.GuildMemberRoleAdd(e.bot.Cfg.server.guild, member.User.ID, e.bot.Cfg.roles.verified)
 
 	userNick := e.bot.Utils.MakeUserNickLogString(member.User)
-	e.bot.SendLog(msg.LogNewMember, fmt.Sprintf("User %s became verified", userNick))
+	e.bot.SendLog(msg.LogVerification, fmt.Sprintf("User %s became verified", userNick))
 }
 
 func (e *Events) parseReactionAdded(m *discordgo.MessageReactionAdd) {
@@ -158,9 +158,22 @@ func (e *Events) rfrAdd(member *discordgo.Member, emojiUsed string) {
 		e.bot.Session.GuildMemberRoleAdd(e.bot.Cfg.server.guild, member.User.ID, role.ID)
 
 		userNick := e.bot.Utils.MakeUserNickLogString(member.User)
-		e.bot.SendLog(msg.LogNewMember, fmt.Sprintf("User %s gains role %s", userNick, RFRRoleSelected))
+		e.bot.SendLog(msg.LogRFR, fmt.Sprintf("User %s gains role %s", userNick, RFRRoleSelected))
 	} else {
 		e.bot.SendLog(msg.LogError, fmt.Sprintf("User %s used rando emoji: %s", userNick, emojiUsed))
+
+		if emojiUsed == "<:srs:1065903555401240656>" {
+			e.bot.SendLog(msg.LogError, "The full code (<:srs:1065903555401240656>) identifies the emoji")
+		}
+		if emojiUsed == ":srs:1065903555401240656" {
+			e.bot.SendLog(msg.LogError, "The full code, with no <> (:srs:1065903555401240656) identifies the emoji")
+		}
+		if emojiUsed == ":srs:" {
+			e.bot.SendLog(msg.LogError, "The code :srs: identifies the emoji")
+		}
+		if emojiUsed == "1065903555401240656" {
+			e.bot.SendLog(msg.LogError, "The emoji's ID identifies the emoji ")
+		}
 	}
 }
 
@@ -197,7 +210,7 @@ func (e *Events) rfrRemove(member *discordgo.Member, emojiUsed string) {
 			}
 
 			userNick := e.bot.Utils.MakeUserNickLogString(member.User)
-			e.bot.SendLog(msg.LogNewMember, fmt.Sprintf("User %s loses role %s", userNick, RFRRoleSelected))
+			e.bot.SendLog(msg.LogRFR, fmt.Sprintf("User %s loses role %s", userNick, RFRRoleSelected))
 		}
 	}
 }
@@ -270,7 +283,7 @@ func (e *Events) learningResourcePost(m *discordgo.MessageReactionAdd, learningD
 		e.bot.Session.MessageReactionAdd(learningDiscussionChannel.ID, message.ID, BotProcessedEmoji)
 
 		userNick := e.bot.Utils.MakeUserNickLogString(m.Member.User)
-		e.bot.SendLog(msg.LogNewMember, fmt.Sprintf("User %s's post was added to Learning Resources", userNick))
+		e.bot.SendLog(msg.LogLearning, fmt.Sprintf("User %s's post was added to Learning Resources", userNick))
 	}
 }
 
