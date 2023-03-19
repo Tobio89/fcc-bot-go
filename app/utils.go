@@ -153,3 +153,12 @@ func (u *Utils) MakeUserNickLogString(user *discordgo.User) string {
 	}
 	return member.User.Username + " (u)"
 }
+
+func (u *Utils) SendResponse(ic *discordgo.InteractionCreate, content string) {
+	u.bot.Session.InteractionRespond(ic.Interaction,
+		&discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{Content: content,
+				Flags: 1 << 6},
+		})
+}

@@ -258,19 +258,10 @@ func (c *Commands) AdminCommandGroup(s *discordgo.Session, i *discordgo.Interact
 
 	case "forcelog":
 
-		err := s.InteractionRespond(i.Interaction,
-			&discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{Content: "Log made in log channel", Flags: 1 << 6},
-			})
+		c.bot.Utils.SendResponse(i, "Log made in Log Channel")
 
-		if err != nil {
-			c.bot.SendLog(msg.LogError, "Whilst responding to command forcelog:")
-			c.bot.SendLog(msg.LogError, err.Error())
-		} else {
-			logString := options[0].StringValue()
-			c.bot.SendLog(msg.CommandForceLog, fmt.Sprintf("By User %s: %s", interactionMember.User.Username, logString))
-		}
+		logString := options[0].StringValue()
+		c.bot.SendLog(msg.CommandForceLog, fmt.Sprintf("By User %s: %s", interactionMember.User.Username, logString))
 
 	case "remind":
 		switch options[0].StringValue() {
@@ -281,15 +272,7 @@ func (c *Commands) AdminCommandGroup(s *discordgo.Session, i *discordgo.Interact
 				response = "Check out this post to find out how to change your nickname!:\nhttps://discord.com/channels/726648668907765842/770532252768927745/955293674152009748"
 				c.bot.Session.ChannelMessageSend(interactionChannel.ID, response)
 				c.bot.SendLog(msg.CommandRemind, fmt.Sprintf("User %s requested reminder '%s'", c.bot.Utils.GetMemberNickOrUsername(*interactionMember), options[0].StringValue()))
-
-				if err := s.InteractionRespond(i.Interaction,
-					&discordgo.InteractionResponse{
-						Type: discordgo.InteractionResponseChannelMessageWithSource,
-						Data: &discordgo.InteractionResponseData{Content: "Remind command successful", Flags: 1 << 6},
-					}); err != nil {
-					c.bot.SendLog(msg.LogError, "Whilst responding to command remind:")
-					c.bot.SendLog(msg.LogError, err.Error())
-				}
+				c.bot.Utils.SendResponse(i, "Remind message sent")
 
 			}
 		case "learning":
@@ -299,27 +282,12 @@ func (c *Commands) AdminCommandGroup(s *discordgo.Session, i *discordgo.Interact
 				response = "Type `/learning-resource` to make a post to the #learning-resources channel!\nYou'll need to add the URL of the resource, and a description of it."
 				c.bot.Session.ChannelMessageSend(interactionChannel.ID, response)
 				c.bot.SendLog(msg.CommandRemind, fmt.Sprintf("User %v requested reminder '%s'", c.bot.Utils.GetMemberNickOrUsername(*interactionMember), options[0].StringValue()))
-
-				if err := s.InteractionRespond(i.Interaction,
-					&discordgo.InteractionResponse{
-						Type: discordgo.InteractionResponseChannelMessageWithSource,
-						Data: &discordgo.InteractionResponseData{Content: "Remind command successful", Flags: 1 << 6},
-					}); err != nil {
-					c.bot.SendLog(msg.LogError, "Whilst responding to command remind:")
-					c.bot.SendLog(msg.LogError, err.Error())
-				}
+				c.bot.Utils.SendResponse(i, "Remind message sent")
 
 			}
 		default:
 			c.bot.SendLog(msg.LogError, fmt.Sprintf("User %v requested reminder '%s'", c.bot.Utils.GetMemberNickOrUsername(*interactionMember), options[0].StringValue()))
-			if err := s.InteractionRespond(i.Interaction,
-				&discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{Content: "That reminder topic doesn't exist!", Flags: 1 << 6},
-				}); err != nil {
-				c.bot.SendLog(msg.LogError, "Whilst responding to command remind:")
-				c.bot.SendLog(msg.LogError, err.Error())
-			}
+			c.bot.Utils.SendResponse(i, "That remind topic doesn't exist")
 
 		}
 
@@ -350,11 +318,7 @@ func (c *Commands) RegularCommandGroup(s *discordgo.Session, i *discordgo.Intera
 		resourceDescription := options[1].StringValue()
 
 		if _, err := url.ParseRequestURI(resourceUrl); err != nil {
-			s.InteractionRespond(i.Interaction,
-				&discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{Content: "Whoops! It looks like your URL was invalid", Flags: 1 << 6},
-				})
+			c.bot.Utils.SendResponse(i, "Whoops! Looks like your URL was invalid")
 
 		} else {
 
@@ -362,11 +326,7 @@ func (c *Commands) RegularCommandGroup(s *discordgo.Session, i *discordgo.Intera
 			c.bot.Session.ChannelMessageSend(c.bot.Cfg.server.learningResources, messageContents)
 			c.bot.SendLog(msg.LogLearning, fmt.Sprintf("%s submitted a Learning Resource via the bot", interactionMember.User.Username))
 
-			s.InteractionRespond(i.Interaction,
-				&discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{Content: "Thanks for posting a learning resource!", Flags: 1 << 6},
-				})
+			c.bot.Utils.SendResponse(i, "Thanks for posting a Learning Resource!")
 		}
 
 	}
@@ -374,16 +334,9 @@ func (c *Commands) RegularCommandGroup(s *discordgo.Session, i *discordgo.Intera
 
 func (c *Commands) SingleEraseNoReason(i *discordgo.InteractionCreate, interactionChannel *discordgo.Channel, interactionID, startingPostID string, interactionMember *discordgo.Member) {
 
-	err := c.bot.Session.InteractionRespond(i.Interaction,
-		&discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{Content: "Messages Erased", Flags: 1 << 6},
-		})
+	c.bot.Utils.SendResponse(i, "Message erased")
 
-	if err != nil {
-		c.bot.SendLog(msg.LogError, "Whilst responding to command erase (single):")
-		c.bot.SendLog(msg.LogError, err.Error())
-	} else {
+	{
 		deleteErr := c.DeleteSingleMessage(interactionChannel.ID, interactionID, startingPostID)
 		if deleteErr != nil {
 			c.bot.SendLog(msg.LogError, "Whilst attempting to delete:")
@@ -410,21 +363,13 @@ func (c *Commands) SingleEraseWithReason(i *discordgo.InteractionCreate, interac
 		c.bot.Session.ChannelMessageSend(interactionChannel.ID, eraseReasonMessage)
 	}
 
-	content := "Message Erased"
+	responseContent := "Message Erased"
 	if deleteErr != nil {
-		content = "Whoops! Failed to erase messages. See log channel for more information"
+		responseContent = "Whoops! Failed to erase messages. See log channel for more information"
 	}
 
-	err := c.bot.Session.InteractionRespond(i.Interaction,
-		&discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{Content: content, Flags: 1 << 6},
-		})
+	c.bot.Utils.SendResponse(i, responseContent)
 
-	if err != nil {
-		c.bot.SendLog(msg.LogError, "Whilst responding to command erase (single):")
-		c.bot.SendLog(msg.LogError, err.Error())
-	}
 }
 
 func (c *Commands) MultiEraseNoReason(i *discordgo.InteractionCreate, interactionChannel *discordgo.Channel, interactionID string, interactionMember *discordgo.Member, eraseFromStartingPostID, eraseUntilPostID string) {
@@ -439,20 +384,13 @@ func (c *Commands) MultiEraseNoReason(i *discordgo.InteractionCreate, interactio
 		c.bot.SendLog(msg.CommandErase, logMessage)
 	}
 
-	content := "Messages Erased"
+	responseContent := "Messages Erased"
 	if deleteErr != nil {
-		content = "Whoops! Failed to erase messages. See log channel for more information"
+		responseContent = "Whoops! Failed to erase messages. See log channel for more information"
 	}
 
-	responseErr := c.bot.Session.InteractionRespond(i.Interaction,
-		&discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{Content: content, Flags: 1 << 6},
-		})
-	if responseErr != nil {
-		c.bot.SendLog(msg.LogError, "Whilst responding to command erase (multi):")
-		c.bot.SendLog(msg.LogError, responseErr.Error())
-	}
+	c.bot.Utils.SendResponse(i, responseContent)
+
 }
 
 func (c *Commands) MultiEraseWithReason(i *discordgo.InteractionCreate, interactionChannel *discordgo.Channel, interactionID string, interactionMember *discordgo.Member, eraseFromStartingPostID, eraseUntilPostID, reason string) {
@@ -469,20 +407,13 @@ func (c *Commands) MultiEraseWithReason(i *discordgo.InteractionCreate, interact
 		c.bot.Session.ChannelMessageSend(interactionChannel.ID, eraseReasonMessage)
 	}
 
-	content := "Messages Erased"
+	responseContent := "Messages Erased"
 	if deleteErr != nil {
-		content = "Whoops! Failed to erase messages. See log channel for more information"
+		responseContent = "Whoops! Failed to erase messages. See log channel for more information"
 	}
 
-	err := c.bot.Session.InteractionRespond(i.Interaction,
-		&discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{Content: content, Flags: 1 << 6},
-		})
-	if err != nil {
-		c.bot.SendLog(msg.LogError, "Whilst responding to command erase (multi):")
-		c.bot.SendLog(msg.LogError, err.Error())
-	}
+	c.bot.Utils.SendResponse(i, responseContent)
+
 }
 
 func (c *Commands) DeleteSingleMessage(channel, messageID, targetMessageID string) error {
@@ -537,40 +468,24 @@ func (c *Commands) ManualVerify(i *discordgo.InteractionCreate, user *discordgo.
 		c.bot.SendLog(msg.LogError, err.Error())
 		responseContent = fmt.Sprintf("Failed to get member %s: have they left?", userNick)
 
-		c.bot.Session.InteractionRespond(i.Interaction,
-			&discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{Content: responseContent,
-					Flags: 1 << 6},
-			})
+		c.bot.Utils.SendResponse(i, responseContent)
+
 		return
 	}
 	// Check if they have the role already
 	if hasRole, err := c.bot.Utils.MemberHasRoleByRoleID(member, c.bot.Cfg.roles.verified); err != nil || hasRole {
 		responseContent = fmt.Sprintf("User %s is already verified", userNick)
 		c.bot.SendLog(msg.CommandVerify, responseContent)
+		c.bot.Utils.SendResponse(i, responseContent)
 
-		c.bot.Session.InteractionRespond(i.Interaction,
-			&discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{Content: responseContent,
-					Flags: 1 << 6},
-			})
 		return
 	}
 
 	c.bot.Session.GuildMemberRoleAdd(c.bot.Cfg.server.guild, member.User.ID, c.bot.Cfg.roles.verified)
 	c.bot.SendLog(msg.CommandVerify, fmt.Sprintf("User %s became verified manually", userNick))
 
-	if err := c.bot.Session.InteractionRespond(i.Interaction,
-		&discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{Content: fmt.Sprintf("User %s verified", userNick),
-				Flags: 1 << 6},
-		}); err != nil {
-		c.bot.SendLog(msg.LogError, "Whilst responding to command erase (single):")
-		c.bot.SendLog(msg.LogError, err.Error())
-	}
+	responseContent = fmt.Sprintf("User %s verified", userNick)
+	c.bot.Utils.SendResponse(i, responseContent)
 }
 
 func (c *Commands) ManualDeVerify(i *discordgo.InteractionCreate, user *discordgo.User) {
@@ -583,40 +498,24 @@ func (c *Commands) ManualDeVerify(i *discordgo.InteractionCreate, user *discordg
 	if err != nil {
 		c.bot.SendLog(msg.LogError, "Whilst attempting manual de-verification:")
 		c.bot.SendLog(msg.LogError, err.Error())
-		responseContent = fmt.Sprintf("Failed to get member %s: have they left?", userNick)
 
-		c.bot.Session.InteractionRespond(i.Interaction,
-			&discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{Content: responseContent,
-					Flags: 1 << 6},
-			})
+		responseContent = fmt.Sprintf("Failed to get member %s: have they left?", userNick)
+		c.bot.Utils.SendResponse(i, responseContent)
+
 		return
 	}
 	// Check if they have the role already
 	if hasRole, err := c.bot.Utils.MemberHasRoleByRoleID(member, c.bot.Cfg.roles.verified); err != nil || !hasRole {
 		responseContent = fmt.Sprintf("User %s is already not verified", userNick)
 		c.bot.SendLog(msg.CommandDeVerify, fmt.Sprintf("User %s is already not verified", userNick))
+		c.bot.Utils.SendResponse(i, responseContent)
 
-		c.bot.Session.InteractionRespond(i.Interaction,
-			&discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{Content: responseContent,
-					Flags: 1 << 6},
-			})
 		return
 	}
 
 	c.bot.Session.GuildMemberRoleRemove(c.bot.Cfg.server.guild, member.User.ID, c.bot.Cfg.roles.verified)
 	c.bot.SendLog(msg.CommandDeVerify, fmt.Sprintf("User %s became de-verified", userNick))
 
-	if err := c.bot.Session.InteractionRespond(i.Interaction,
-		&discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{Content: fmt.Sprintf("User %s de-verified", userNick),
-				Flags: 1 << 6},
-		}); err != nil {
-		c.bot.SendLog(msg.LogError, "Whilst responding to command de-verify:")
-		c.bot.SendLog(msg.LogError, err.Error())
-	}
+	responseContent = fmt.Sprintf("User %s de-verified", userNick)
+	c.bot.Utils.SendResponse(i, responseContent)
 }
