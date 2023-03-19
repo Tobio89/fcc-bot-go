@@ -528,7 +528,7 @@ func (c *Commands) DeleteMultipleMessages(eraseFromStartingPostID, eraseUntilPos
 func (c *Commands) ManualVerify(i *discordgo.InteractionCreate, user *discordgo.User) {
 
 	var responseContent string
-	var userNick string = c.bot.Utils.GetUserNickOrUsername(user)
+	var userNick string = c.bot.Utils.MakeUserNickLogString(user)
 
 	// Get member from server's member list
 	member, err := c.bot.Utils.GetMemberByID(user.ID)
@@ -576,7 +576,7 @@ func (c *Commands) ManualVerify(i *discordgo.InteractionCreate, user *discordgo.
 func (c *Commands) ManualDeVerify(i *discordgo.InteractionCreate, user *discordgo.User) {
 
 	var responseContent string
-	var userNick string = c.bot.Utils.GetUserNickOrUsername(user)
+	var userNick string = c.bot.Utils.MakeUserNickLogString(user)
 
 	// Get member from server's member list
 	member, err := c.bot.Utils.GetMemberByID(user.ID)
