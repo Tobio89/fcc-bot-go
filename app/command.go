@@ -451,7 +451,7 @@ func (c *Commands) ClearIntroductions(i *discordgo.InteractionCreate, startingID
 		return
 	}
 
-	messages, err := c.bot.Session.ChannelMessages(c.bot.Cfg.server.intros, 100, startingID, "", "")
+	messages, err := c.bot.Session.ChannelMessages(c.bot.Cfg.server.intros, 100, "", startingID, "")
 	if err != nil {
 		c.bot.SendLog(msg.LogError, "Whilst attempting to clear introductions:")
 		c.bot.SendLog(msg.LogError, err.Error())
@@ -460,8 +460,7 @@ func (c *Commands) ClearIntroductions(i *discordgo.InteractionCreate, startingID
 	}
 	messageIDs := []string{}
 
-	for i := len(messages) - 1; i > 0; i-- {
-		m := messages[i]
+	for _, m := range messages {
 		if m.Author.ID == c.bot.Cfg.bot.id {
 			messageIDs = append(messageIDs, m.ID)
 		}
