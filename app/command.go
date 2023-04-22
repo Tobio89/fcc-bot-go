@@ -137,6 +137,14 @@ var IntroCleanupCommand = &discordgo.ApplicationCommand{
 	Name:        "clear-introductions",
 	Type:        discordgo.ChatApplicationCommand,
 	Description: "Bot clears Bot-made posts in Introductions Channel",
+	Options: []*discordgo.ApplicationCommandOption{
+		{
+			Name:        "starting-point",
+			Type:        discordgo.ApplicationCommandOptionString,
+			Description: "Specify starting post ID",
+			Required:    true,
+		},
+	},
 }
 
 var LearningResourceCommand = &discordgo.ApplicationCommand{
@@ -315,7 +323,8 @@ func (c *Commands) AdminCommandGroup(s *discordgo.Session, i *discordgo.Interact
 
 	case "clear-introductions":
 		{
-			c.ClearIntroductions(i)
+			startingPostID := options[0].StringValue()
+			c.ClearIntroductions(i, startingPostID)
 		}
 	}
 
@@ -434,36 +443,40 @@ func (c *Commands) MultiEraseWithReason(i *discordgo.InteractionCreate, interact
 
 }
 
-func (c *Commands) ClearIntroductions(i *discordgo.InteractionCreate) {
+func (c *Commands) ClearIntroductions(i *discordgo.InteractionCreate, startingID string) {
 
-	messages, err := c.bot.Session.ChannelMessages(c.bot.Cfg.server.intros, 100, "", i.Message.ID, "")
+	if i.ChannelID != c.bot.Cfg.server.intros {
+		c.bot.SendLog(msg.LogError, "Attempted introduction clear in wrong channel")
+		c.bot.Utils.SendResponse(i, "Use this command in introductions channel.")
+		return
+	}
+
+	messages, err := c.bot.Session.ChannelMessages(c.bot.Cfg.server.intros, 100, startingID, "", "")
 	if err != nil {
 		c.bot.SendLog(msg.LogError, "Whilst attempting to clear introductions:")
 		c.bot.SendLog(msg.LogError, err.Error())
 		c.bot.Utils.SendResponse(i, "Failed to clear introductions. See log channel for more information")
 		return
 	}
-	messageIDs := []string{}
 
-	for i := len(messages) - 1; i > 0; i-- {
-		m := messages[i]
+	c.bot.Utils.SendResponse(i, "Clear introductions command now processing...")
+
+	messagesDeleted := 0
+	errorsIncurred := 0
+
+	for _, m := range messages {
 		if m.Author.ID == c.bot.Cfg.bot.id {
-			messageIDs = append(messageIDs, m.ID)
+			if err := c.bot.Session.ChannelMessageDelete(c.bot.Cfg.server.intros, m.ID); err != nil {
+				errorsIncurred += 1
+			} else {
+				messagesDeleted += 1
+			}
 		}
 	}
-
-	err = c.bot.Session.ChannelMessagesBulkDelete(c.bot.Cfg.server.intros, messageIDs)
-	if err != nil {
-		c.bot.SendLog(msg.LogError, "Whilst attempting to clear introductions:")
-		c.bot.SendLog(msg.LogError, err.Error())
-		c.bot.Utils.SendResponse(i, "Failed to clear introductions. See log channel for more information")
-
-		return
+	c.bot.SendLog(msg.CommandClearIntros, fmt.Sprintf("%d bot intro messages were removed", messagesDeleted))
+	if errorsIncurred < 0 {
+		c.bot.SendLog(msg.LogError, fmt.Sprintf("%d errors incurred in the process", errorsIncurred))
 	}
-
-	responseContent := fmt.Sprintf("%d introduction messages cleared.", len(messageIDs))
-	c.bot.Utils.SendResponse(i, responseContent)
-	c.bot.SendLog(msg.CommandClearIntros, responseContent)
 }
 
 func (c *Commands) ManualVerify(i *discordgo.InteractionCreate, user *discordgo.User) {
