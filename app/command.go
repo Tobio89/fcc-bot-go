@@ -436,7 +436,7 @@ func (c *Commands) MultiEraseWithReason(i *discordgo.InteractionCreate, interact
 
 func (c *Commands) ClearIntroductions(i *discordgo.InteractionCreate) {
 
-	messages, err := c.bot.Session.ChannelMessages(c.bot.Cfg.server.intros, 100, "", i.Message.ID, "")
+	messages, err := c.bot.Session.ChannelMessages(c.bot.Cfg.server.intros, 100, "", "", "")
 	if err != nil {
 		c.bot.SendLog(msg.LogError, "Whilst attempting to clear introductions:")
 		c.bot.SendLog(msg.LogError, err.Error())
