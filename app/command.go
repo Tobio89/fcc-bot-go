@@ -137,6 +137,14 @@ var IntroCleanupCommand = &discordgo.ApplicationCommand{
 	Name:        "clear-introductions",
 	Type:        discordgo.ChatApplicationCommand,
 	Description: "Bot clears Bot-made posts in Introductions Channel",
+	Options: []*discordgo.ApplicationCommandOption{
+		{
+			Name:        "starting-point",
+			Type:        discordgo.ApplicationCommandOptionString,
+			Description: "Specify starting post ID",
+			Required:    true,
+		},
+	},
 }
 
 var LearningResourceCommand = &discordgo.ApplicationCommand{
@@ -315,7 +323,8 @@ func (c *Commands) AdminCommandGroup(s *discordgo.Session, i *discordgo.Interact
 
 	case "clear-introductions":
 		{
-			c.ClearIntroductions(i)
+			startingPostID := options[0].StringValue()
+			c.ClearIntroductions(i, startingPostID)
 		}
 	}
 
@@ -434,9 +443,15 @@ func (c *Commands) MultiEraseWithReason(i *discordgo.InteractionCreate, interact
 
 }
 
-func (c *Commands) ClearIntroductions(i *discordgo.InteractionCreate) {
+func (c *Commands) ClearIntroductions(i *discordgo.InteractionCreate, startingID string) {
 
-	messages, err := c.bot.Session.ChannelMessages(c.bot.Cfg.server.intros, 100, "", "", "")
+	if i.ChannelID != c.bot.Cfg.server.intros {
+		c.bot.SendLog(msg.LogError, "Attempted introduction clear in wrong channel")
+		c.bot.Utils.SendResponse(i, "Use this command in introductions channel.")
+		return
+	}
+
+	messages, err := c.bot.Session.ChannelMessages(c.bot.Cfg.server.intros, 100, "", startingID, "")
 	if err != nil {
 		c.bot.SendLog(msg.LogError, "Whilst attempting to clear introductions:")
 		c.bot.SendLog(msg.LogError, err.Error())
