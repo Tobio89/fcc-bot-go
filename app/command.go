@@ -34,6 +34,12 @@ func (c *Commands) create() {
 		allSuccessful = false
 	}
 
+	if _, err := c.bot.Session.ApplicationCommandCreate(c.bot.Cfg.bot.id, c.bot.Cfg.server.guild, IntroCleanupCommand); err != nil {
+		c.bot.SendLog(msg.LogError, "Whilst adding intro-cleanup command:")
+		c.bot.SendLog(msg.LogError, err.Error())
+		allSuccessful = false
+	}
+
 	if _, err := c.bot.Session.ApplicationCommandCreate(c.bot.Cfg.bot.id, c.bot.Cfg.server.guild, ForceLogCommand); err != nil {
 		c.bot.SendLog(msg.LogError, "Whilst adding forcelog command:")
 		c.bot.SendLog(msg.LogError, err.Error())
@@ -125,6 +131,12 @@ var ForceLogCommand = &discordgo.ApplicationCommand{
 			Required:    true,
 		},
 	},
+}
+
+var IntroCleanupCommand = &discordgo.ApplicationCommand{
+	Name:        "clear-introductions",
+	Type:        discordgo.ChatApplicationCommand,
+	Description: "Bot clears Bot-made posts in Introductions Channel",
 }
 
 var LearningResourceCommand = &discordgo.ApplicationCommand{
@@ -300,7 +312,13 @@ func (c *Commands) AdminCommandGroup(s *discordgo.Session, i *discordgo.Interact
 		{
 			c.ManualDeVerify(i, options[0].UserValue(c.bot.Session))
 		}
+
+	case "clear-introductions":
+		{
+			c.ClearIntroductions(i)
+		}
 	}
+
 }
 
 func (c *Commands) RegularCommandGroup(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -416,44 +434,36 @@ func (c *Commands) MultiEraseWithReason(i *discordgo.InteractionCreate, interact
 
 }
 
-func (c *Commands) DeleteSingleMessage(channel, messageID, targetMessageID string) error {
+func (c *Commands) ClearIntroductions(i *discordgo.InteractionCreate) {
 
-	var messageIDs []string
-
-	messageIDs = append(messageIDs, messageID)
-	messageIDs = append(messageIDs, targetMessageID)
-
-	err := c.bot.Session.ChannelMessagesBulkDelete(channel, messageIDs)
+	messages, err := c.bot.Session.ChannelMessages(c.bot.Cfg.server.intros, 100, "", i.Message.ID, "")
 	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c *Commands) DeleteMultipleMessages(eraseFromStartingPostID, eraseUntilPostID, channel string) error {
-
-	messages, err := c.bot.Session.ChannelMessages(channel, 100, "", eraseFromStartingPostID, "")
-	if err != nil {
-		return err
+		c.bot.SendLog(msg.LogError, "Whilst attempting to clear introductions:")
+		c.bot.SendLog(msg.LogError, err.Error())
+		c.bot.Utils.SendResponse(i, "Failed to clear introductions. See log channel for more information")
+		return
 	}
 	messageIDs := []string{}
 
 	for i := len(messages) - 1; i > 0; i-- {
 		m := messages[i]
-		messageIDs = append(messageIDs, m.ID)
-		if m.ID == eraseUntilPostID {
-			break
+		if m.Author.ID == c.bot.Cfg.bot.id {
+			messageIDs = append(messageIDs, m.ID)
 		}
 	}
-	messageIDs = append(messageIDs, eraseFromStartingPostID)
 
-	err = c.bot.Session.ChannelMessagesBulkDelete(channel, messageIDs)
+	err = c.bot.Session.ChannelMessagesBulkDelete(c.bot.Cfg.server.intros, messageIDs)
 	if err != nil {
-		return err
+		c.bot.SendLog(msg.LogError, "Whilst attempting to clear introductions:")
+		c.bot.SendLog(msg.LogError, err.Error())
+		c.bot.Utils.SendResponse(i, "Failed to clear introductions. See log channel for more information")
+
+		return
 	}
 
-	return nil
+	responseContent := fmt.Sprintf("%d introduction messages cleared.", len(messageIDs))
+	c.bot.Utils.SendResponse(i, responseContent)
+	c.bot.SendLog(msg.CommandClearIntros, responseContent)
 }
 
 func (c *Commands) ManualVerify(i *discordgo.InteractionCreate, user *discordgo.User) {
@@ -518,4 +528,46 @@ func (c *Commands) ManualDeVerify(i *discordgo.InteractionCreate, user *discordg
 
 	responseContent = fmt.Sprintf("User %s de-verified", userNick)
 	c.bot.Utils.SendResponse(i, responseContent)
+}
+
+// Command Utilities
+
+func (c *Commands) DeleteSingleMessage(channel, messageID, targetMessageID string) error {
+
+	var messageIDs []string
+
+	messageIDs = append(messageIDs, messageID)
+	messageIDs = append(messageIDs, targetMessageID)
+
+	err := c.bot.Session.ChannelMessagesBulkDelete(channel, messageIDs)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Commands) DeleteMultipleMessages(eraseFromStartingPostID, eraseUntilPostID, channel string) error {
+
+	messages, err := c.bot.Session.ChannelMessages(channel, 100, "", eraseFromStartingPostID, "")
+	if err != nil {
+		return err
+	}
+	messageIDs := []string{}
+
+	for i := len(messages) - 1; i > 0; i-- {
+		m := messages[i]
+		messageIDs = append(messageIDs, m.ID)
+		if m.ID == eraseUntilPostID {
+			break
+		}
+	}
+	messageIDs = append(messageIDs, eraseFromStartingPostID)
+
+	err = c.bot.Session.ChannelMessagesBulkDelete(channel, messageIDs)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
