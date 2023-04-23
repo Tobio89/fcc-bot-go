@@ -98,7 +98,7 @@ func main() {
 	fccbot.Events = &Events{bot: fccbot}
 	fccbot.Commands = &Commands{bot: fccbot}
 	// Add intents/permissions
-	fccbot.Session.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentsGuildMembers | discordgo.IntentsAllWithoutPrivileged
+	fccbot.Session.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentsGuildMembers | discordgo.IntentsAllWithoutPrivileged | discordgo.IntentMessageContent
 
 	// Add handlers before open
 	fccbot.Events.Initialize()
