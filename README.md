@@ -1,6 +1,6 @@
 # **FCC-Bot**
 
-`ver. 2.5.1`
+`ver. 2.7.0`
 
 ## **Description**
 

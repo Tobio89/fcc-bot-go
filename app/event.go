@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/BruceJi7/fcc-bot-go/app/msg"
 	"github.com/bwmarrin/discordgo"
@@ -75,10 +76,26 @@ func (e *Events) handleIntroductionVerification(m *discordgo.MessageCreate) {
 		return
 	}
 
+	userNickForLog := e.bot.Utils.MakeUserNickLogString(member.User)
+	userNick := e.bot.Utils.GetUserNickOrUsername(member.User)
+
+	if !checkIntroMessage(m.Content) {
+		e.bot.SendLog(msg.LogVerification, fmt.Sprintf("User %s failed to get verified", userNickForLog))
+		return
+	}
+
 	e.bot.Session.GuildMemberRoleAdd(e.bot.Cfg.server.guild, member.User.ID, e.bot.Cfg.roles.verified)
 
-	userNick := e.bot.Utils.MakeUserNickLogString(member.User)
-	e.bot.SendLog(msg.LogVerification, fmt.Sprintf("User %s became verified", userNick))
+	threadChannel, err := e.bot.Session.MessageThreadStart(e.bot.Cfg.server.intros, m.ID, fmt.Sprintf("Welcome, %s!", userNick), 4320)
+	if err != nil {
+		e.bot.SendLog(msg.LogError, err.Error())
+	} else {
+		e.bot.Session.ChannelMessageSendTTS(threadChannel.ID, "Welcome, and thanks. You're now verified!")
+	}
+
+	e.removeBotWelcomeMsg(m.ID, member.User)
+
+	e.bot.SendLog(msg.LogVerification, fmt.Sprintf("User %s became verified", userNickForLog))
 }
 
 func (e *Events) parseReactionAdded(m *discordgo.MessageReactionAdd) {
@@ -295,6 +312,62 @@ func parseLearningReactions(reactions []*discordgo.MessageReactions, emoji strin
 
 func (e *Events) makeMessageLink(reference *discordgo.MessageReference) string {
 	return fmt.Sprintf("https://discord.com/channels/%s/%s/%s", e.bot.Cfg.server.guild, reference.ChannelID, reference.MessageID)
+}
+
+// Check an intro message is long enough, and actually has a greeting in it.
+func checkIntroMessage(msg string) bool {
+
+	fmt.Println(msg)
+	if len(msg) < 15 {
+		return false
+	}
+
+	uniformCaseMsg := strings.ToUpper(msg)
+
+	validGreetings := []string{
+		"HI",
+		"HELLO",
+		"SUP",
+		"HEY",
+		"NAME",
+		"I'M",
+		"I AM",
+		"안녕",
+		"입니다",
+		"이름",
+		"HOLA",
+	}
+
+	for _, g := range validGreetings {
+		if strings.Contains(uniformCaseMsg, g) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (e *Events) removeBotWelcomeMsg(introMsgID string, newMember *discordgo.User) {
+	recentMessages, err := e.bot.Session.ChannelMessages(e.bot.Cfg.server.intros, 10, introMsgID, "", "")
+
+	if err != nil {
+		e.bot.SendLog(msg.LogError, err.Error())
+		return
+	}
+
+	for _, m := range recentMessages {
+		if m.Author.ID == e.bot.Cfg.bot.id {
+			for _, u := range m.Mentions {
+				if u.ID == newMember.ID {
+					err = e.bot.Session.ChannelMessageDelete(e.bot.Cfg.server.intros, m.ID)
+					if err != nil {
+						e.bot.SendLog(msg.LogError, err.Error())
+					}
+					return
+				}
+			}
+		}
+	}
 }
 
 var RFRMap = map[string]string{
