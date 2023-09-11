@@ -22,6 +22,10 @@ func (e *Events) Initialize() {
 
 func (e *Events) onReady(s *discordgo.Session, _ *discordgo.Ready) {
 	logMessage := "Bot was turned on"
+	if e.bot.Cfg.meta.startupViaCron {
+		logMessage += " via Cron"
+	}
+	logMessage += fmt.Sprintf(" at %s", e.bot.Cfg.meta.startupTime.Format("2006-01-02 15:04:05"))
 	e.bot.SendLog(msg.LogOnReady, logMessage)
 }
 
@@ -31,7 +35,7 @@ func (e *Events) onNewMember(s *discordgo.Session, memberJoinEvent *discordgo.Gu
 	suggestion := msg.Suggestion.GetRandom()
 	closing := msg.Closing.GetRandom()
 
-	botWelcomeScript := fmt.Sprintf("%s, %s! Welcome to FCC Korea's discord server!\n*You'll need to introduce yourself here to complete your verification and get access to the full server :)*\n*여기서 자기소개하면 사용자 검증을 완료 될 겁니다*\nWe'd love to get to know you and find out where you are on your coding journey!\nOnce you're verified, %s check out the react-for-roles channel and let us know where you're based!\n%s", greeting, memberJoinEvent.Mention(), suggestion, closing)
+	botWelcomeScript := fmt.Sprintf("%s, %s! Welcome to FCC Korea's discord server!\n*You'll need to introduce yourself here to complete your verification and get access to the full server :)*\n*여기서 자기소개하면 사용자 검증이 완료 될 겁니다*\nWe'd love to get to know you and find out where you are on your coding journey!\nOnce you're verified, %s check out the react-for-roles channel and let us know where you're based!\n%s", greeting, memberJoinEvent.Mention(), suggestion, closing)
 
 	e.bot.Session.ChannelMessageSend(e.bot.Cfg.server.intros, botWelcomeScript)
 
