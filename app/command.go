@@ -41,7 +41,7 @@ func (c *Commands) create() {
 	}
 
 	if _, err := c.bot.Session.ApplicationCommandCreate(c.bot.Cfg.bot.id, c.bot.Cfg.server.guild, ForceLogCommand); err != nil {
-		c.bot.SendLog(msg.LogError, "Whilst adding forcelog command:")
+		c.bot.SendLog(msg.LogError, "Whilst adding force-log command:")
 		c.bot.SendLog(msg.LogError, err.Error())
 		allSuccessful = false
 	}
@@ -65,7 +65,7 @@ func (c *Commands) create() {
 	}
 
 	if _, err := c.bot.Session.ApplicationCommandCreate(c.bot.Cfg.bot.id, c.bot.Cfg.server.guild, DeVerifyCommand); err != nil {
-		c.bot.SendLog(msg.LogError, "Whilst adding DeVerify command:")
+		c.bot.SendLog(msg.LogError, "Whilst adding de-verify command:")
 		c.bot.SendLog(msg.LogError, err.Error())
 		allSuccessful = false
 	}
@@ -506,6 +506,13 @@ func (c *Commands) ManualVerify(i *discordgo.InteractionCreate, user *discordgo.
 
 	c.bot.Session.GuildMemberRoleAdd(c.bot.Cfg.server.guild, member.User.ID, c.bot.Cfg.roles.verified)
 	c.bot.SendLog(msg.CommandVerify, fmt.Sprintf("User %s became verified manually", userNick))
+
+	threadChannel, err := c.bot.Session.ThreadStart(c.bot.Cfg.server.intros, fmt.Sprintf("Welcome, %s!", userNick), 0, 4320)
+	if err != nil {
+		c.bot.SendLog(msg.LogError, err.Error())
+	} else {
+		c.bot.Session.ChannelMessageSendTTS(threadChannel.ID, "Welcome, and thanks. You're now verified!")
+	}
 
 	responseContent = fmt.Sprintf("User %s verified", userNick)
 	c.bot.Utils.SendResponse(i, responseContent)
