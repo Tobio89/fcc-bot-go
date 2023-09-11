@@ -22,6 +22,10 @@ func (e *Events) Initialize() {
 
 func (e *Events) onReady(s *discordgo.Session, _ *discordgo.Ready) {
 	logMessage := "Bot was turned on"
+	if e.bot.Cfg.meta.startupViaCron {
+		logMessage += " via Cron"
+	}
+	logMessage += fmt.Sprintf(" at %s", e.bot.Cfg.meta.startupTime.Format("2006-01-02 15:04:05"))
 	e.bot.SendLog(msg.LogOnReady, logMessage)
 }
 
