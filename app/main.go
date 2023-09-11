@@ -30,6 +30,7 @@ type Config struct {
 	server ChannelCfg
 	bot    BotCfg
 	roles  Roles
+	meta   BotMeta
 }
 
 type Bot struct {
@@ -44,8 +45,17 @@ type Roles struct {
 	verified string
 }
 
+type BotMeta struct {
+	startupViaCron bool
+	startupTime    time.Time
+}
+
+var cronStartupFlag *bool
+
 func init() {
 	var prodModeFlag = flag.Bool("p", false, "Use dev environment file")
+	cronStartupFlag = flag.Bool("c", false, "Started up by Cron")
+
 	flag.Parse()
 
 	if *prodModeFlag {
@@ -81,6 +91,10 @@ func main() {
 		},
 		roles: Roles{
 			verified: os.Getenv("ROLE_VERIFIED"),
+		},
+		meta: BotMeta{
+			startupViaCron: *cronStartupFlag,
+			startupTime:    time.Now(),
 		},
 	}
 
