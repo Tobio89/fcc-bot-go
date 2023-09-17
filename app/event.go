@@ -18,6 +18,7 @@ func (e *Events) Initialize() {
 	e.bot.Session.AddHandler(e.onReactionAdded)
 	e.bot.Session.AddHandler(e.onReactionRemoved)
 	e.bot.Session.AddHandler(e.onNewMember)
+	e.bot.Session.AddHandler(e.onMemberLeave)
 }
 
 func (e *Events) onReady(s *discordgo.Session, _ *discordgo.Ready) {
@@ -41,6 +42,10 @@ func (e *Events) onNewMember(s *discordgo.Session, memberJoinEvent *discordgo.Gu
 
 	userNick := e.bot.Utils.MakeUserNickLogString(memberJoinEvent.User)
 	e.bot.SendLog(msg.LogNewMember, fmt.Sprintf("User %s joined the server", userNick))
+}
+func (e *Events) onMemberLeave(s *discordgo.Session, memberLeaveEvent *discordgo.GuildMemberRemove) {
+	userNick := e.bot.Utils.MakeUserNickLogString(memberLeaveEvent.User)
+	e.bot.SendLog(msg.LogMemberLeave, fmt.Sprintf("User %s left the server", userNick))
 }
 
 func (e *Events) onMessageSent(s *discordgo.Session, m *discordgo.MessageCreate) {

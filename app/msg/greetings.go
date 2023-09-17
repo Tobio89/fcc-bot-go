@@ -19,6 +19,7 @@ var Closing greeting = []string{"Happy Coding!", "Good luck, have fun!", "Keep i
 const (
 	LogOnReady      string = "[Init]          "
 	LogNewMember    string = "[Joined]        "
+	LogMemberLeave  string = "[Left]          "
 	LogRFR          string = "[RFR]           "
 	LogVerification string = "[Verified]      "
 	LogError        string = "[ERROR]         "
