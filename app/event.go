@@ -88,8 +88,10 @@ func (e *Events) handleIntroductionVerification(m *discordgo.MessageCreate) {
 	userNickForLog := e.bot.Utils.MakeUserNickLogString(member.User)
 	userNick := e.bot.Utils.GetUserNickOrUsername(member.User)
 
-	if !checkIntroMessage(m.Content) {
-		e.bot.SendLog(msg.LogVerification, fmt.Sprintf("User %s failed to get verified", userNickForLog))
+	introSuccess, introReason := checkIntroMessage(m.Content)
+
+	if !introSuccess {
+		e.bot.SendLog(msg.LogVerification, fmt.Sprintf("User %s failed to get verified: %s", userNickForLog, introReason))
 		return
 	}
 
@@ -324,13 +326,11 @@ func (e *Events) makeMessageLink(reference *discordgo.MessageReference) string {
 }
 
 // Check an intro message is long enough, and actually has a greeting in it.
-func checkIntroMessage(msg string) bool {
+func checkIntroMessage(msg string) (bool, string) {
 
-	fmt.Println(msg)
 	if len(msg) < 15 {
-		return false
+		return false, "intro too short"
 	}
-
 	uniformCaseMsg := strings.ToUpper(msg)
 
 	validGreetings := []string{
@@ -349,11 +349,11 @@ func checkIntroMessage(msg string) bool {
 
 	for _, g := range validGreetings {
 		if strings.Contains(uniformCaseMsg, g) {
-			return true
+			return true, "valid"
 		}
 	}
 
-	return false
+	return false, "no greeting"
 }
 
 func (e *Events) removeBotWelcomeMsg(introMsgID string, newMember *discordgo.User) {
