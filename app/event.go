@@ -44,8 +44,7 @@ func (e *Events) onNewMember(s *discordgo.Session, memberJoinEvent *discordgo.Gu
 	e.bot.SendLog(msg.LogNewMember, fmt.Sprintf("User %s joined the server", userNick))
 }
 func (e *Events) onMemberLeave(s *discordgo.Session, memberLeaveEvent *discordgo.GuildMemberRemove) {
-	userNick := e.bot.Utils.MakeUserNickLogString(memberLeaveEvent.User)
-	e.bot.SendLog(msg.LogMemberLeave, fmt.Sprintf("User %s left the server", userNick))
+	e.bot.SendLog(msg.LogMemberLeave, fmt.Sprintf("User %s left the server", memberLeaveEvent.User.Username))
 }
 
 func (e *Events) onMessageSent(s *discordgo.Session, m *discordgo.MessageCreate) {
