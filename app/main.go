@@ -126,7 +126,7 @@ func main() {
 	<-sc
 
 	// Report shutdown
-	fccbot.SendLog(msg.LogShutdown, "Bot was shut down")
+	fccbot.SendLogAndPing(msg.LogShutdown, "Bot was shut down")
 	// Cleanly close down the Discord session.
 	fccbot.Session.Close()
 
@@ -154,6 +154,16 @@ func (b *Bot) SendLog(logPrefix, logMessage string) {
 	msgString := fmt.Sprintf("%s %s %s", logPrefix, formattedTime, logMessage)
 	b.Session.ChannelMessageSend(b.Cfg.server.logs, fmt.Sprintf("`%s`", msgString))
 	fmt.Println(msgString)
+}
+
+func (b *Bot) SendLogAndPing(logPrefix, logMessage string) {
+	ping, err := b.Utils.BotLogPing()
+	if err != nil {
+		b.SendLog(msg.LogError, err.Error())
+	}
+
+	b.Session.ChannelMessageSend(b.Cfg.server.logs, fmt.Sprintf("FYI %s:", ping))
+	b.SendLog(logPrefix, logMessage)
 }
 
 func (b *Bot) SendMessageToChannel(channelName string, message string) {
