@@ -27,6 +27,14 @@ func (e *Events) onReady(s *discordgo.Session, _ *discordgo.Ready) {
 		logMessage += " via Cron"
 	}
 	logMessage += fmt.Sprintf(" at %s", e.bot.Cfg.meta.startupTime.Format("2006-01-02 15:04:05"))
+
+	ping, err := e.bot.Utils.BotLogPing()
+	if err != nil {
+		e.bot.SendLog(msg.LogError, err.Error())
+	} else {
+		logMessage += fmt.Sprintf(" re: %s", ping)
+	}
+
 	e.bot.SendLog(msg.LogOnReady, logMessage)
 }
 
@@ -405,6 +413,7 @@ const LearningEmoji = "💡"
 
 const OnlineMeetupEmoji = "🍇"
 const OnlineMeetupRoleID = "933240244596256808"
+const BotLogRoleID = "1194103220470034462"
 
 var CollabRoleMap = map[string]string{
 	"project-shelf": "Project Shelf Collaborator",

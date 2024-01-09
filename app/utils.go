@@ -162,3 +162,10 @@ func (u *Utils) SendResponse(ic *discordgo.InteractionCreate, content string) {
 				Flags: 1 << 6},
 		})
 }
+func (u *Utils) BotLogPing() (string, error) {
+	role, err := u.GetRoleByID(BotLogRoleID)
+	if err != nil {
+		return "", err
+	}
+	return role.Mention(), nil
+}
