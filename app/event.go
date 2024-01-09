@@ -28,14 +28,7 @@ func (e *Events) onReady(s *discordgo.Session, _ *discordgo.Ready) {
 	}
 	logMessage += fmt.Sprintf(" at %s", e.bot.Cfg.meta.startupTime.Format("2006-01-02 15:04:05"))
 
-	ping, err := e.bot.Utils.BotLogPing()
-	if err != nil {
-		e.bot.SendLog(msg.LogError, err.Error())
-	} else {
-		logMessage += fmt.Sprintf(" re: %s", ping)
-	}
-
-	e.bot.SendLog(msg.LogOnReady, logMessage)
+	e.bot.SendLogAndPing(msg.LogOnReady, logMessage)
 }
 
 func (e *Events) onNewMember(s *discordgo.Session, memberJoinEvent *discordgo.GuildMemberAdd) {
