@@ -222,12 +222,12 @@ func (c *Commands) AdminCommandGroup(s *discordgo.Session, i *discordgo.Interact
 	if i.Type != discordgo.InteractionApplicationCommand {
 		return
 	}
-
 	data := i.ApplicationCommandData()
 	options := data.Options
 
 	interactionID := i.Interaction.ID
-	interactionChannel, _ := c.bot.Utils.GetChannelByID(i.ChannelID)
+	interactionChannelID := i.ChannelID
+	interactionChannel, _ := c.bot.Utils.GetChannelByID(i.ChannelID) // Channel object, does not include threads!
 	interactionMember := i.Member
 
 	interactionMemberIsAdmin, err := c.bot.Utils.IsUserAdmin(interactionMember.User.ID)
@@ -288,9 +288,9 @@ func (c *Commands) AdminCommandGroup(s *discordgo.Session, i *discordgo.Interact
 		case "nickname":
 			{
 				response := fmt.Sprintf("From  %s <3", interactionMember.Mention())
-				c.bot.Session.ChannelMessageSend(interactionChannel.ID, response)
+				c.bot.Session.ChannelMessageSend(interactionChannelID, response)
 				response = "Check out this post to find out how to change your nickname!:\nhttps://discord.com/channels/726648668907765842/770532252768927745/955293674152009748"
-				c.bot.Session.ChannelMessageSend(interactionChannel.ID, response)
+				c.bot.Session.ChannelMessageSend(interactionChannelID, response)
 				c.bot.SendLog(msg.CommandRemind, fmt.Sprintf("User %s requested reminder '%s'", c.bot.Utils.GetMemberNickOrUsername(*interactionMember), options[0].StringValue()))
 				c.bot.Utils.SendResponse(i, "Remind message sent")
 
@@ -298,9 +298,9 @@ func (c *Commands) AdminCommandGroup(s *discordgo.Session, i *discordgo.Interact
 		case "learning":
 			{
 				response := fmt.Sprintf("From  %s <3", interactionMember.Mention())
-				c.bot.Session.ChannelMessageSend(interactionChannel.ID, response)
+				c.bot.Session.ChannelMessageSend(interactionChannelID, response)
 				response = "Type `/learning-resource` to make a post to the #learning-resources channel!\nYou'll need to add the URL of the resource, and a description of it."
-				c.bot.Session.ChannelMessageSend(interactionChannel.ID, response)
+				c.bot.Session.ChannelMessageSend(interactionChannelID, response)
 				c.bot.SendLog(msg.CommandRemind, fmt.Sprintf("User %v requested reminder '%s'", c.bot.Utils.GetMemberNickOrUsername(*interactionMember), options[0].StringValue()))
 				c.bot.Utils.SendResponse(i, "Remind message sent")
 

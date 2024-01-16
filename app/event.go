@@ -101,7 +101,7 @@ func (e *Events) handleIntroductionVerification(m *discordgo.MessageCreate) {
 	if err != nil {
 		e.bot.SendLog(msg.LogError, err.Error())
 	} else {
-		e.bot.Session.ChannelMessageSendTTS(threadChannel.ID, "Welcome, and thanks. You're now verified!")
+		e.bot.Session.ChannelMessageSend(threadChannel.ID, "Welcome, and thanks. You're now verified!")
 	}
 
 	e.removeBotWelcomeMsg(m.ID, member.User)
