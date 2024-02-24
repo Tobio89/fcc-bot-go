@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"github.com/BruceJi7/fcc-bot-go/app/msg"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type ChannelCfg struct {
@@ -27,10 +29,11 @@ type BotCfg struct {
 }
 
 type Config struct {
-	server ChannelCfg
-	bot    BotCfg
-	roles  Roles
-	meta   BotMeta
+	server   ChannelCfg
+	bot      BotCfg
+	roles    Roles
+	meta     BotMeta
+	database DatabaseCfg
 }
 
 type Bot struct {
@@ -48,6 +51,15 @@ type Roles struct {
 type BotMeta struct {
 	startupViaCron bool
 	startupTime    time.Time
+}
+
+type DatabaseCfg struct {
+	dbPath string
+}
+
+type Database struct {
+	conn *sql.DB
+	Cfg  *DatabaseCfg
 }
 
 var cronStartupFlag *bool
@@ -96,6 +108,28 @@ func main() {
 			startupViaCron: *cronStartupFlag,
 			startupTime:    time.Now(),
 		},
+		database: DatabaseCfg{
+			dbPath: os.Getenv("DB_PATH"),
+		},
+	}
+
+	db, err := sql.Open("sqlite3", cfg.database.dbPath)
+	if err != nil {
+		fmt.Println("Error opening database connection:")
+		panic(err)
+	}
+
+	defer db.Close()
+
+	database := &Database{
+		conn: db,
+		Cfg:  &cfg.database,
+	}
+
+	err = database.configureDatabase()
+	if err != nil {
+		fmt.Println("Error configuring database:")
+		panic(err)
 	}
 
 	dg, err := discordgo.New("Bot " + cfg.bot.token)
@@ -119,6 +153,8 @@ func main() {
 	fccbot.Commands.Initialize()
 
 	fccbot.Start()
+
+	fccbot.SendLog(msg.LogDatabase, fmt.Sprintf("DB setup with path: %s", cfg.database.dbPath))
 
 	// Create channel, hold it open
 	sc := make(chan os.Signal, 1)
@@ -174,4 +210,17 @@ func (b *Bot) SendMessageToChannel(channelName string, message string) {
 	} else {
 		b.Session.ChannelMessageSend(destChannel.ID, message)
 	}
+}
+
+func (d *Database) configureDatabase() error {
+	pragmaConfig := `
+		PRAGMA busy_timeout = 5000;
+		PRAGMA foreign_keys = ON;
+		PRAGMA journal_mode = WAL;
+	`
+	_, err := d.conn.Exec(pragmaConfig)
+	if err != nil {
+		return fmt.Errorf("failed configuring database: %w", err)
+	}
+	return nil
 }
