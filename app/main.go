@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"flag"
 	"fmt"
 	"os"
@@ -9,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/BruceJi7/fcc-bot-go/app/db"
 	"github.com/BruceJi7/fcc-bot-go/app/msg"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
@@ -33,7 +33,7 @@ type Config struct {
 	bot      BotCfg
 	roles    Roles
 	meta     BotMeta
-	database DatabaseCfg
+	database db.DatabaseCfg
 }
 
 type Bot struct {
@@ -51,15 +51,6 @@ type Roles struct {
 type BotMeta struct {
 	startupViaCron bool
 	startupTime    time.Time
-}
-
-type DatabaseCfg struct {
-	dbPath string
-}
-
-type Database struct {
-	conn *sql.DB
-	Cfg  *DatabaseCfg
 }
 
 var cronStartupFlag *bool
@@ -108,25 +99,22 @@ func main() {
 			startupViaCron: *cronStartupFlag,
 			startupTime:    time.Now(),
 		},
-		database: DatabaseCfg{
-			dbPath: os.Getenv("DB_PATH"),
+		database: db.DatabaseCfg{
+			DbPath: os.Getenv("DB_PATH"),
 		},
 	}
 
-	db, err := sql.Open("sqlite3", cfg.database.dbPath)
+	database := &db.Database{Cfg: cfg.database}
+
+	err := database.ConnectDatabase()
 	if err != nil {
-		fmt.Println("Error opening database connection:")
+		fmt.Println(err)
 		panic(err)
 	}
 
-	defer db.Close()
+	defer database.Conn.Close()
 
-	database := &Database{
-		conn: db,
-		Cfg:  &cfg.database,
-	}
-
-	err = database.configureDatabase()
+	err = database.ConfigureDatabase()
 	if err != nil {
 		fmt.Println("Error configuring database:")
 		panic(err)
@@ -154,7 +142,7 @@ func main() {
 
 	fccbot.Start()
 
-	fccbot.SendLog(msg.LogDatabase, fmt.Sprintf("DB setup with path: %s", cfg.database.dbPath))
+	fccbot.SendLog(msg.LogDatabase, fmt.Sprintf("DB setup with path: %s", cfg.database.DbPath))
 
 	// Create channel, hold it open
 	sc := make(chan os.Signal, 1)
@@ -210,17 +198,4 @@ func (b *Bot) SendMessageToChannel(channelName string, message string) {
 	} else {
 		b.Session.ChannelMessageSend(destChannel.ID, message)
 	}
-}
-
-func (d *Database) configureDatabase() error {
-	pragmaConfig := `
-		PRAGMA busy_timeout = 5000;
-		PRAGMA foreign_keys = ON;
-		PRAGMA journal_mode = WAL;
-	`
-	_, err := d.conn.Exec(pragmaConfig)
-	if err != nil {
-		return fmt.Errorf("failed configuring database: %w", err)
-	}
-	return nil
 }
