@@ -8,9 +8,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/BruceJi7/fcc-bot-go/app/db"
 	"github.com/BruceJi7/fcc-bot-go/app/msg"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type ChannelCfg struct {
@@ -27,10 +29,11 @@ type BotCfg struct {
 }
 
 type Config struct {
-	server ChannelCfg
-	bot    BotCfg
-	roles  Roles
-	meta   BotMeta
+	server   ChannelCfg
+	bot      BotCfg
+	roles    Roles
+	meta     BotMeta
+	database db.DatabaseCfg
 }
 
 type Bot struct {
@@ -96,6 +99,25 @@ func main() {
 			startupViaCron: *cronStartupFlag,
 			startupTime:    time.Now(),
 		},
+		database: db.DatabaseCfg{
+			DbPath: os.Getenv("DB_PATH"),
+		},
+	}
+
+	database := &db.Database{Cfg: cfg.database}
+
+	err := database.ConnectDatabase()
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+
+	defer database.Conn.Close()
+
+	err = database.ConfigureDatabase()
+	if err != nil {
+		fmt.Println("Error configuring database:")
+		panic(err)
 	}
 
 	dg, err := discordgo.New("Bot " + cfg.bot.token)
@@ -119,6 +141,8 @@ func main() {
 	fccbot.Commands.Initialize()
 
 	fccbot.Start()
+
+	fccbot.SendLog(msg.LogDatabase, fmt.Sprintf("DB setup with path: %s", cfg.database.DbPath))
 
 	// Create channel, hold it open
 	sc := make(chan os.Signal, 1)

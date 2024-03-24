@@ -21,12 +21,10 @@ If you are intending to fork FCCBot to use in your own server, understand that w
 
 ## **Getting Started**
 
-
 ### **Installation**
 
 1. Clone the repository.
 2. Run `go get` to install the packages needed.
-
 
 ### **Running**
 
@@ -35,7 +33,7 @@ If you are intending to fork FCCBot to use in your own server, understand that w
 You will need to create .env files before running the bot: `dev.env` and `prod.env`.
 >**_NOTE:_** Running the bot in dev or prod mode does not require the other .env file.
 
-| **env variable**            | **how to obtain**                                                                   |
+| **env variable**            | **how to obtain**                                                                |
 |---------------------------|------------------------------------------------------------------------------------|
 | BOT_TOKEN                 | The private key Discord gives you for a bot                                        |
 | BOT_ID                    | The bot's user id: right click the bot in the server                               |
@@ -45,6 +43,9 @@ You will need to create .env files before running the bot: `dev.env` and `prod.e
 | LEARNING_RESOURCE_CHANNEL | The learning resource channel's id: create a channel, and right click it           |
 | RFR_POST                  | The post to listen for react-for-role reactions: create a post, and right click it |
 | ROLE_VERIFIED             | The role users receive when validated: create a role, and right click it           |
+| DB_PATH                   | The path of the database file: specify where to save the database file             |
+
+>**_NOTE:_** We recommend the `DB_PATH` point to `./app/db/_store/{db_name}.sqlite`. This path is already added to the .gitignore file.
 
 #### **Commands**
 
@@ -59,3 +60,4 @@ You will need to create .env files before running the bot: `dev.env` and `prod.e
 | `make stop`                    | Makefile command to stop the app with PM2           |
 
 >**_NOTE:_** The above commands assume you are running the bot on Mac or Linux, and have PM2 installed globally.
+>**_NOTE:_** go-sqlite3 package requires the environment variable CGO_ENABLED=1 and a gcc compiler present within your path.
