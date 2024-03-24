@@ -100,7 +100,7 @@ func main() {
 			startupTime:    time.Now(),
 		},
 		database: db.DatabaseCfg{
-			DbPath: os.Getenv("DB_PATH"),
+			DbPath: "./_store/" + os.Getenv("DB_PATH"),
 		},
 	}
 
@@ -142,7 +142,9 @@ func main() {
 
 	fccbot.Start()
 
-	fccbot.SendLog(msg.LogDatabase, fmt.Sprintf("DB setup with path: %s", cfg.database.DbPath))
+	fccbot.SendLog(msg.LogDatabase, "DB is connected")
+
+	fmt.Println(msg.LogDatabase, fmt.Sprintf("DB setup with path: %s", cfg.database.DbPath))
 
 	// Create channel, hold it open
 	sc := make(chan os.Signal, 1)

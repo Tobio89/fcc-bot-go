@@ -45,7 +45,7 @@ You will need to create .env files before running the bot: `dev.env` and `prod.e
 | ROLE_VERIFIED             | The role users receive when validated: create a role, and right click it           |
 | DB_PATH                   | The path of the database file: specify where to save the database file             |
 
->**_NOTE:_** We recommend the `DB_PATH` point to `_store/{db_name}.sqlite`. This path is already added to the .gitignore file.
+>**_NOTE:_** DB Path is relative to ./_store/ folder. We recommend the `DB_PATH` point to `{db_name}.sqlite`. This path (`/_store/*`)is already added to the .gitignore file.
 
 #### **Commands**
 
