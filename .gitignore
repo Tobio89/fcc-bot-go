@@ -1,5 +1,5 @@
 *.env
 
 # Generated Database files
-app/db/_store/*
-!app/db/_store/fcc_test.sqlite
+_store/*
+!_store/fcc_test.sqlite
