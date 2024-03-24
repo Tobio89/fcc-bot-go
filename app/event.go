@@ -345,6 +345,7 @@ func checkIntroMessage(msg string) (bool, string) {
 		"입니다",
 		"이름",
 		"HOLA",
+		"GREETINGS",
 	}
 
 	for _, g := range validGreetings {
