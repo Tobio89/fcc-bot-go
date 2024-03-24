@@ -104,6 +104,10 @@ func main() {
 		},
 	}
 
+	if os.Getenv("DB_PATH") == "" {
+		panic("No DB path provided!")
+	}
+
 	database := &db.Database{Cfg: cfg.database}
 
 	err := database.ConnectDatabase()
