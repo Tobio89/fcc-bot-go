@@ -41,7 +41,12 @@ func (e *Events) onNewMember(s *discordgo.Session, memberJoinEvent *discordgo.Gu
 
 	e.bot.Session.ChannelMessageSend(e.bot.Cfg.server.intros, botWelcomeScript)
 
-	userNick := e.bot.Utils.MakeUserNickLogString(memberJoinEvent.User)
+	userNick, err := e.bot.Utils.MakeUserNickLogString(memberJoinEvent.User)
+	if err != nil {
+		e.bot.SendLog(msg.LogError, err.Error())
+		return
+	}
+
 	e.bot.SendLog(msg.LogNewMember, fmt.Sprintf("User %s joined the server", userNick))
 }
 func (e *Events) onMemberLeave(s *discordgo.Session, memberLeaveEvent *discordgo.GuildMemberRemove) {
@@ -85,8 +90,17 @@ func (e *Events) handleIntroductionVerification(m *discordgo.MessageCreate) {
 		return
 	}
 
-	userNickForLog := e.bot.Utils.MakeUserNickLogString(member.User)
-	userNick := e.bot.Utils.GetUserNickOrUsername(member.User)
+	userNickForLog, err := e.bot.Utils.MakeUserNickLogString(member.User)
+	if err != nil {
+		e.bot.SendLog(msg.LogError, err.Error())
+		return
+	}
+
+	userNick, err := e.bot.Utils.GetUserNickOrUsername(member.User)
+	if err != nil {
+		e.bot.SendLog(msg.LogError, err.Error())
+		return
+	}
 
 	introSuccess, introReason := checkIntroMessage(m.Content)
 
@@ -133,8 +147,17 @@ func (e *Events) parseReactionAdded(m *discordgo.MessageReactionAdd) {
 		}
 	} else {
 		//If not, might be learning-related
-		learningDiscussionChannel, _ := e.bot.Utils.GetChannelByName("learning-discussion")
-		learningResourcesChannel, _ := e.bot.Utils.GetChannelByName("learning-resources")
+		learningDiscussionChannel, err := e.bot.Utils.GetChannelByName("learning-discussion")
+		if err != nil {
+			e.bot.SendLog(msg.LogError, err.Error())
+			return
+		}
+
+		learningResourcesChannel, err := e.bot.Utils.GetChannelByName("learning-resources")
+		if err != nil {
+			e.bot.SendLog(msg.LogError, err.Error())
+			return
+		}
 
 		if m.ChannelID == learningDiscussionChannel.ID && emojiUsed == LearningEmoji {
 			e.learningResourcePost(m, learningDiscussionChannel, learningResourcesChannel)
@@ -165,7 +188,11 @@ func (e *Events) parseReactionRemoved(m *discordgo.MessageReactionRemove) {
 
 func (e *Events) rfrAdd(member *discordgo.Member, emojiUsed string) {
 
-	userNick := e.bot.Utils.MakeUserNickLogString(member.User)
+	userNick, err := e.bot.Utils.MakeUserNickLogString(member.User)
+	if err != nil {
+		e.bot.SendLog(msg.LogError, err.Error())
+		return
+	}
 
 	//If the role matches one of the RFR roles
 	if RFRRoleSelected, exists := RFRMap[emojiUsed]; exists {
@@ -185,7 +212,12 @@ func (e *Events) rfrAdd(member *discordgo.Member, emojiUsed string) {
 		}
 		e.bot.Session.GuildMemberRoleAdd(e.bot.Cfg.server.guild, member.User.ID, role.ID)
 
-		userNick := e.bot.Utils.MakeUserNickLogString(member.User)
+		userNick, err := e.bot.Utils.MakeUserNickLogString(member.User)
+		if err != nil {
+			e.bot.SendLog(msg.LogError, err.Error())
+			return
+		}
+
 		e.bot.SendLog(msg.LogRFR, fmt.Sprintf("User %s gains role %s", userNick, role.Name))
 	} else {
 		e.bot.SendLog(msg.LogError, fmt.Sprintf("User %s used rando emoji: %s", userNick, emojiUsed))
@@ -227,7 +259,12 @@ func (e *Events) rfrRemove(member *discordgo.Member, emojiUsed string) {
 				return
 			}
 
-			userNick := e.bot.Utils.MakeUserNickLogString(member.User)
+			userNick, err := e.bot.Utils.MakeUserNickLogString(member.User)
+			if err != nil {
+				e.bot.SendLog(msg.LogError, err.Error())
+				return
+			}
+
 			e.bot.SendLog(msg.LogRFR, fmt.Sprintf("User %s loses role %s", userNick, role.Name))
 		}
 	}
@@ -235,7 +272,12 @@ func (e *Events) rfrRemove(member *discordgo.Member, emojiUsed string) {
 
 func (e *Events) onlineChatRoleAdd(member *discordgo.Member) {
 
-	OnlineChatSubscriptionRole, _ := e.bot.Utils.GetRoleByID(OnlineMeetupRoleID)
+	OnlineChatSubscriptionRole, err := e.bot.Utils.GetRoleByID(OnlineMeetupRoleID)
+	if err != nil {
+		e.bot.SendLog(msg.LogError, "Whilst adding Gather role, finding role:")
+		e.bot.SendLog(msg.LogError, err.Error())
+		return
+	}
 
 	for _, userExistingRoleID := range member.Roles {
 		if userExistingRoleID == OnlineChatSubscriptionRole.ID {
@@ -244,20 +286,30 @@ func (e *Events) onlineChatRoleAdd(member *discordgo.Member) {
 		}
 	}
 
-	err := e.bot.Session.GuildMemberRoleAdd(e.bot.Cfg.server.guild, member.User.ID, OnlineChatSubscriptionRole.ID)
+	err = e.bot.Session.GuildMemberRoleAdd(e.bot.Cfg.server.guild, member.User.ID, OnlineChatSubscriptionRole.ID)
 	if err != nil {
-		e.bot.SendLog(msg.LogError, "Whilst adding Gather role:")
+		e.bot.SendLog(msg.LogError, "Whilst adding Gather role, adding role:")
 		e.bot.SendLog(msg.LogError, err.Error())
 	} else {
 
-		userNick := e.bot.Utils.MakeUserNickLogString(member.User)
+		userNick, err := e.bot.Utils.MakeUserNickLogString(member.User)
+		if err != nil {
+			e.bot.SendLog(msg.LogError, err.Error())
+			return
+		}
+
 		e.bot.SendLog(msg.LogNewMember, fmt.Sprintf("User %s subscribes to Online Meetup updates", userNick))
 	}
 }
 
 func (e *Events) onlineChatRoleRemove(member *discordgo.Member) {
 
-	OnlineChatSubscriptionRole, _ := e.bot.Utils.GetRoleByID(OnlineMeetupRoleID)
+	OnlineChatSubscriptionRole, err := e.bot.Utils.GetRoleByID(OnlineMeetupRoleID)
+	if err != nil {
+		e.bot.SendLog(msg.LogError, "Whilst removing Gather role, finding role:")
+		e.bot.SendLog(msg.LogError, err.Error())
+		return
+	}
 
 	shouldRemove := false
 	for _, userExistingRoleID := range member.Roles {
@@ -271,13 +323,19 @@ func (e *Events) onlineChatRoleRemove(member *discordgo.Member) {
 		return
 	}
 
-	err := e.bot.Session.GuildMemberRoleRemove(e.bot.Cfg.server.guild, member.User.ID, OnlineChatSubscriptionRole.ID)
+	err = e.bot.Session.GuildMemberRoleRemove(e.bot.Cfg.server.guild, member.User.ID, OnlineChatSubscriptionRole.ID)
 	if err != nil {
 		e.bot.SendLog(msg.LogError, "Whilst parsing gather role add:")
 		e.bot.SendLog(msg.LogError, err.Error())
 		return
 	}
-	userNick := e.bot.Utils.MakeUserNickLogString(member.User)
+
+	userNick, err := e.bot.Utils.MakeUserNickLogString(member.User)
+	if err != nil {
+		e.bot.SendLog(msg.LogError, err.Error())
+		return
+	}
+
 	e.bot.SendLog(msg.LogNewMember, fmt.Sprintf("User %s unsubscribes from Online Meetup updates", userNick))
 }
 
@@ -300,7 +358,12 @@ func (e *Events) learningResourcePost(m *discordgo.MessageReactionAdd, learningD
 		e.bot.Session.ChannelMessageSend(learningResourcesChannel.ID, messageContents)
 		e.bot.Session.MessageReactionAdd(learningDiscussionChannel.ID, message.ID, BotProcessedEmoji)
 
-		userNick := e.bot.Utils.MakeUserNickLogString(m.Member.User)
+		userNick, err := e.bot.Utils.MakeUserNickLogString(m.Member.User)
+		if err != nil {
+			e.bot.SendLog(msg.LogError, err.Error())
+			return
+		}
+
 		e.bot.SendLog(msg.LogLearning, fmt.Sprintf("User %s's post was added to Learning Resources", userNick))
 	}
 }
