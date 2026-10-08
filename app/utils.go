@@ -19,7 +19,7 @@ func (u *Utils) GetChannelByName(name string) (c *discordgo.Channel, err error) 
 			return c, nil
 		}
 	}
-	return channels[0], errors.New("channel not found")
+	return nil, errors.New("channel not found")
 }
 
 func (u *Utils) GetChannelByID(cID string) (c *discordgo.Channel, err error) {
@@ -30,7 +30,7 @@ func (u *Utils) GetChannelByID(cID string) (c *discordgo.Channel, err error) {
 			return c, nil
 		}
 	}
-	return channels[0], errors.New("channel not found")
+	return nil, errors.New("channel not found")
 }
 
 // Return discord role struct from role's name string
@@ -42,7 +42,7 @@ func (u *Utils) GetRoleByName(roleName string) (role *discordgo.Role, err error)
 			return role, nil
 		}
 	}
-	return roles[0], errors.New("role not found")
+	return nil, errors.New("role not found")
 }
 
 // Return discord role struct from role's ID string
@@ -54,7 +54,7 @@ func (u *Utils) GetRoleByID(roleID string) (role *discordgo.Role, err error) {
 			return role, nil
 		}
 	}
-	return roles[0], errors.New("role not found")
+	return nil, errors.New("role not found")
 }
 
 // Return boolean: does user have role, from role's name string
@@ -97,7 +97,7 @@ func (u *Utils) GetMemberByID(userDetails string) (member *discordgo.Member, err
 			return member, nil
 		}
 	}
-	return guildMembers[0], errors.New("member not found")
+	return nil, errors.New("member not found")
 }
 
 func (u *Utils) MemberHasPermission(userID string, permission int64) (bool, error) {
@@ -135,14 +135,17 @@ func (u *Utils) GetMemberNickOrUsername(member discordgo.Member) string {
 	return member.User.Username
 }
 
-func (u *Utils) GetUserNickOrUsername(user *discordgo.User) string {
+func (u *Utils) GetUserNickOrUsername(user *discordgo.User) (string, error) {
 
-	member, _ := u.GetMemberByID(user.ID)
+	member, err := u.GetMemberByID(user.ID)
+	if err != nil {
+		return "", err
+	}
 
 	if member.Nick != "" {
-		return member.Nick
+		return member.Nick, nil
 	}
-	return member.User.Username
+	return member.User.Username, nil
 }
 
 func (u *Utils) MakeUserNickLogString(user *discordgo.User) string {
