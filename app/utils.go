@@ -13,7 +13,11 @@ type Utils struct {
 
 // Return discord channel struct from channel's name string
 func (u *Utils) GetChannelByName(name string) (c *discordgo.Channel, err error) {
-	channels, _ := u.bot.Session.GuildChannels(u.bot.Cfg.server.guild)
+	channels, err := u.bot.Session.GuildChannels(u.bot.Cfg.server.guild)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, c := range channels {
 		if c.Name == name {
 			return c, nil
@@ -24,7 +28,10 @@ func (u *Utils) GetChannelByName(name string) (c *discordgo.Channel, err error) 
 
 func (u *Utils) GetChannelByID(cID string) (c *discordgo.Channel, err error) {
 
-	channels, _ := u.bot.Session.GuildChannels(u.bot.Cfg.server.guild)
+	channels, err := u.bot.Session.GuildChannels(u.bot.Cfg.server.guild)
+	if err != nil {
+		return nil, err
+	}
 	for _, c := range channels {
 		if c.ID == cID {
 			return c, nil
@@ -35,7 +42,10 @@ func (u *Utils) GetChannelByID(cID string) (c *discordgo.Channel, err error) {
 
 // Return discord role struct from role's name string
 func (u *Utils) GetRoleByName(roleName string) (role *discordgo.Role, err error) {
-	roles, _ := u.bot.Session.GuildRoles(u.bot.Cfg.server.guild)
+	roles, err := u.bot.Session.GuildRoles(u.bot.Cfg.server.guild)
+	if err != nil {
+		return nil, err
+	}
 
 	for _, role := range roles {
 		if role.Name == roleName {
@@ -47,7 +57,10 @@ func (u *Utils) GetRoleByName(roleName string) (role *discordgo.Role, err error)
 
 // Return discord role struct from role's ID string
 func (u *Utils) GetRoleByID(roleID string) (role *discordgo.Role, err error) {
-	roles, _ := u.bot.Session.GuildRoles(u.bot.Cfg.server.guild)
+	roles, err := u.bot.Session.GuildRoles(u.bot.Cfg.server.guild)
+	if err != nil {
+		return nil, err
+	}
 
 	for _, role := range roles {
 		if role.ID == roleID {
@@ -148,13 +161,16 @@ func (u *Utils) GetUserNickOrUsername(user *discordgo.User) (string, error) {
 	return member.User.Username, nil
 }
 
-func (u *Utils) MakeUserNickLogString(user *discordgo.User) string {
-	member, _ := u.GetMemberByID(user.ID)
+func (u *Utils) MakeUserNickLogString(user *discordgo.User) (string, error) {
+	member, err := u.GetMemberByID(user.ID)
+	if err != nil {
+		return "", err
+	}
 
 	if member.Nick != "" {
-		return member.Nick + " (n)"
+		return member.Nick + " (n)", nil
 	}
-	return member.User.Username + " (u)"
+	return member.User.Username + " (u)", nil
 }
 
 func (u *Utils) SendResponse(ic *discordgo.InteractionCreate, content string) {

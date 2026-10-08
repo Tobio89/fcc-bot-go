@@ -482,7 +482,11 @@ func (c *Commands) ClearIntroductions(i *discordgo.InteractionCreate, startingID
 func (c *Commands) ManualVerify(i *discordgo.InteractionCreate, user *discordgo.User) {
 
 	var responseContent string
-	var userNick string = c.bot.Utils.MakeUserNickLogString(user)
+	userNick, err := c.bot.Utils.MakeUserNickLogString(user)
+	if err != nil {
+		c.bot.SendLog(msg.LogError, err.Error())
+		return
+	}
 
 	// Get member from server's member list
 	member, err := c.bot.Utils.GetMemberByID(user.ID)
@@ -521,8 +525,11 @@ func (c *Commands) ManualVerify(i *discordgo.InteractionCreate, user *discordgo.
 func (c *Commands) ManualDeVerify(i *discordgo.InteractionCreate, user *discordgo.User) {
 
 	var responseContent string
-	var userNick string = c.bot.Utils.MakeUserNickLogString(user)
-
+	userNick, err := c.bot.Utils.MakeUserNickLogString(user)
+	if err != nil {
+		c.bot.SendLog(msg.LogError, err.Error())
+		return
+	}
 	// Get member from server's member list
 	member, err := c.bot.Utils.GetMemberByID(user.ID)
 	if err != nil {
