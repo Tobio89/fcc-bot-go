@@ -474,7 +474,7 @@ func (c *Commands) ClearIntroductions(i *discordgo.InteractionCreate, startingID
 		}
 	}
 	c.bot.SendLog(msg.CommandClearIntros, fmt.Sprintf("%d bot intro messages were removed", messagesDeleted))
-	if errorsIncurred < 0 {
+	if errorsIncurred > 0 {
 		c.bot.SendLog(msg.LogError, fmt.Sprintf("%d errors incurred in the process", errorsIncurred))
 	}
 }
