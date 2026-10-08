@@ -184,6 +184,7 @@ func (b *Bot) SendLogAndPing(logPrefix, logMessage string) {
 	ping, err := b.Utils.BotLogPing()
 	if err != nil {
 		b.SendLog(msg.LogError, err.Error())
+		return
 	}
 
 	b.Session.ChannelMessageSend(b.Cfg.server.logs, fmt.Sprintf("FYI %s:", ping))
