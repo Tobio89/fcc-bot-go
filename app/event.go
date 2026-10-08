@@ -86,7 +86,11 @@ func (e *Events) handleIntroductionVerification(m *discordgo.MessageCreate) {
 	}
 
 	userNickForLog := e.bot.Utils.MakeUserNickLogString(member.User)
-	userNick := e.bot.Utils.GetUserNickOrUsername(member.User)
+	userNick, err := e.bot.Utils.GetUserNickOrUsername(member.User)
+	if err != nil {
+		e.bot.SendLog(msg.LogError, err.Error())
+		return
+	}
 
 	introSuccess, introReason := checkIntroMessage(m.Content)
 
